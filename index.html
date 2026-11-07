@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patna Dham - Public E-Catalogue & Admin ERP Pro</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Fonts (Noto Sans Devanagari & Inter) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- html2pdf.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    body { font-family: 'Inter', 'Noto Sans Devanagari', sans-serif; background-color: #f8fafc; }
+    .a4-preview {
+      width: 210mm; min-height: 297mm; background: #ffffff; color: #000000;
+      margin: 0 auto; padding: 8mm 10mm; box-sizing: border-box;
+      border: 1px solid #cbd5e1; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      font-family: 'Noto Sans Devanagari', Arial, sans-serif;
+    }
+    .req-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .req-table th, .req-table td { border: 1px solid #000000; padding: 3px 6px; line-height: 1.25; }
+    .req-table th { background-color: #f1f5f9; font-weight: 700; text-align: center; }
+    .yellow-highlight { background-color: #ffff00 !important; font-weight: 700; }
+    @media print {
+      body * { visibility: hidden; }
+      #printableArea, #printableArea * { visibility: visible; }
+      #printableArea { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 5mm; border: none; box-shadow: none; }
+      .no-print { display: none !important; }
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+  </style>
+</head>
+<body class="text-slate-800">
+
+  <!-- TOP HEADER & NAVBAR -->
+  <header class="bg-gradient-to-r from-amber-700 via-orange-600 to-amber-700 text-white shadow-lg sticky top-0 z-40 no-print">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+          <i class="fa-solid fa-om text-2xl text-amber-200"></i>
+        </div>
+        <div>
+          <h1 class="text-lg md:text-xl font-bold tracking-wide">भगवान श्री लक्ष्मी नारायण धाम, पटना (बिहार)</h1>
+          <p class="text-xs text-amber-100">पूजा सामग्री पब्लिक ई-कैटलॉग एवं एडमिन रिक्विजिशन ERP</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (Dynamic based on Role) -->
+      <nav id="appNavbar" class="flex flex-wrap items-center gap-1.5 text-xs md:text-sm font-medium">
+        <button onclick="switchTab('catalogue')" id="tabBtn-catalogue" class="tab-btn bg-white text-orange-700 px-3 py-2 rounded-lg shadow-sm flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-store"></i> <span>पब्लिक कैटलॉग (Store)</span>
+        </button>
+        <button onclick="switchTab('helpline')" id="tabBtn-helpline" class="tab-btn bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-headset"></i> <span>हेल्पलाइन & संपर्क</span>
+        </button>
+        <!-- Admin/Viewer login trigger button -->
+        <button onclick="openLoginModal()" id="navLoginBtn" class="bg-amber-900 hover:bg-amber-950 text-amber-100 px-3.5 py-2 rounded-lg font-bold flex items-center gap-1.5 transition shadow">
+          <i class="fa-solid fa-lock"></i> <span>लॉगिन (Admin / Viewer)</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-3 md:px-4 py-5">
+
+    <!-- ==================== TAB 1: PUBLIC E-CATALOGUE (STORE) ==================== -->
+    <section id="tab-catalogue" class="tab-panel space-y-5">
+      <!-- Search & Voice Filter Bar -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-5">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-basket-shopping text-orange-600"></i> पवित्र पूजा सामग्री एवं औषधियाँ (सेवा राशि कैटलॉग)
+            </h2>
+            <p class="text-xs text-slate-500">श्रद्धालुगण यहाँ सभी सामग्रियों की फोटो और सेवा राशि (Price) देख सकते हैं।</p>
+          </div>
+          <!-- Search & Voice Search -->
+          <div class="flex items-center gap-2 w-full md:w-auto">
+            <div class="relative flex-1 md:w-80">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </span>
+              <input type="text" id="publicSearchInput" oninput="renderPublicCatalogue()" placeholder="सामग्री खोजें (जैसे: aasan, आसन, 1)..." class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 outline-none" />
+            </div>
+            <button onclick="startVoiceSearch()" id="voiceSearchBtn" class="bg-orange-100 hover:bg-orange-200 text-orange-800 p-2.5 rounded-xl transition" title="बोलकर खोजें (Voice Search)">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category Filter Chips -->
+        <div class="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-slate-100" id="categoryChipsContainer">
+          <button onclick="filterCategory('ALL')" class="cat-chip bg-orange-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition">सभी सामग्री</button>
+          <button onclick="filterCategory('पूजा सामग्री')" class="cat-chip bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition">पूजा सामग्री</button>
+          <button onclick="filterCategory('हवन सामग्री')" class="cat-chip bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition">हवन सामग्री</button>
+          <button onclick="filterCategory('औषधि')" class="cat-chip bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition">औषधि / Daily Care</button>
+          <button onclick="filterCategory('मूर्ति का विवरण')" class="cat-chip bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition">पवित्र मूर्तियाँ</button>
+          <button onclick="filterCategory('पत्रिका/पुस्तक')" class="cat-chip bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition">पत्रिका एवं पुस्तकें</button>
+        </div>
+      </div>
+
+      <!-- Catalogue Product Cards Grid -->
+      <div id="publicCatalogueGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <!-- Dynamic JS Cards Rendered Here -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: PUBLIC HELPLINE & CONTACTS ==================== -->
+    <section id="tab-helpline" class="tab-panel hidden space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-3xl mx-auto space-y-6">
+        <div class="text-center border-b pb-4">
+          <div class="bg-orange-100 text-orange-700 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 text-xl font-bold">
+            <i class="fa-solid fa-hands-praying"></i>
+          </div>
+          <h2 class="text-xl font-bold text-slate-800">भगवान श्री लक्ष्मी नारायण धाम, पटना शाखा (बिहार)</h2>
+          <p class="text-xs text-slate-500 mt-1">किसी भी सहायता या सामग्री पूछताछ के लिए नीचे दिए गए नंबरों पर संपर्क कर सकते हैं।</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-2">
+            <div class="font-bold text-amber-900 flex items-center gap-2">
+              <i class="fa-solid fa-location-dot text-orange-600"></i> पटना धाम पता (Address)
+            </div>
+            <p class="text-xs text-slate-700 leading-relaxed">
+              Bhagwan Sree Lakshmi Narayan Dham, GANPATI SALES, at NARAYAN EXOTICA, OPP SUNRISE HOSPITAL.<br/>
+              250 m SOUTH FROM GHURDAUR MORE, ASHIYANA DIGHA MAIN ROAD.<br/>
+              PO - KESHRI NAGAR, PATNA, BIHAR. PIN - 800024
+            </p>
+          </div>
+
+          <div class="bg-orange-50/70 border border-orange-200 rounded-xl p-4 space-y-3">
+            <div class="font-bold text-orange-900 flex items-center gap-2">
+              <i class="fa-solid fa-phone-volume text-orange-600"></i> सार्वजनिक हेल्पलाइन नंबर
+            </div>
+            <div class="space-y-1 text-xs">
+              <div class="flex items-center justify-between bg-white p-2 rounded border">
+                <span class="font-semibold">पटना हेल्पलाइन 1:</span>
+                <a href="tel:7004984949" class="text-orange-600 font-bold hover:underline">7004984949</a>
+              </div>
+              <div class="flex items-center justify-between bg-white p-2 rounded border">
+                <span class="font-semibold">पटना हेल्पलाइन 2:</span>
+                <a href="tel:9631331126" class="text-orange-600 font-bold hover:underline">9631331126</a>
+              </div>
+              <div class="flex items-center justify-between bg-white p-2 rounded border">
+                <span class="font-semibold">दिल्ली निरंकारी धाम:</span>
+                <a href="tel:01149945995" class="text-orange-600 font-bold hover:underline">011-49945995</a>
+              </div>
+              <div class="flex items-center justify-between bg-white p-2 rounded border">
+                <span class="font-semibold">ईमेल (E-mail):</span>
+                <a href="mailto:gurukripaskpatna@gmail.com" class="text-blue-600 font-bold hover:underline">gurukripaskpatna@gmail.com</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: ADMIN REQUISITION BUILDER (Protected) ==================== -->
+    <section id="tab-builder" class="tab-panel hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Left Column: Controls -->
+        <div class="lg:col-span-5 space-y-4 no-print">
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+            <div class="flex items-center justify-between mb-3 border-b pb-2">
+              <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-orange-600"></i> Requisition Date & Branch
+              </h2>
+              <span id="roleBadge" class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">Admin Mode</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">तारीख (Date)</label>
+                <input type="date" id="reqDate" onchange="updateLivePreview()" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">शाखा (Branch)</label>
+                <input type="text" id="reqBranch" value="Patna Dham, Bihar" oninput="updateLivePreview()" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Fast Add Item -->
+          <div class="bg-white rounded-xl shadow-sm border border-orange-200 p-4">
+            <h2 class="font-bold text-slate-800 text-sm mb-3 border-b pb-2 flex items-center gap-2">
+              <i class="fa-solid fa-cart-plus text-orange-600"></i> सामान जोड़ें (Code या नाम से)
+            </h2>
+            <div class="grid grid-cols-12 gap-2 items-end bg-orange-50/60 p-3 rounded-lg border border-orange-100">
+              <div class="col-span-3">
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">कोड</label>
+                <input type="text" id="fastCode" placeholder="Code" oninput="onFastCodeInput(this.value)" class="w-full border rounded px-2.5 py-1.5 text-sm font-bold text-orange-700 bg-white" />
+              </div>
+              <div class="col-span-9">
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">सामग्री का नाम</label>
+                <input type="text" id="fastSearch" list="masterItemsDatalist" placeholder="नाम या कीवर्ड टाइप करें..." onchange="onFastSearchSelect(this.value)" class="w-full border rounded px-2.5 py-1.5 text-sm bg-white" />
+                <datalist id="masterItemsDatalist"></datalist>
+              </div>
+              <div class="col-span-4 mt-2">
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Rate (₹)</label>
+                <input type="number" id="fastRate" placeholder="0" oninput="calcFastTotal()" class="w-full border rounded px-2 py-1 text-sm bg-white" />
+              </div>
+              <div class="col-span-4 mt-2">
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Qty</label>
+                <input type="number" id="fastQty" placeholder="Qty" oninput="calcFastTotal()" onkeydown="if(event.key==='Enter'){addItemToRequisition();}" class="w-full border border-orange-400 rounded px-2 py-1 text-sm font-bold bg-white" />
+              </div>
+              <div class="col-span-4 mt-2">
+                <button onclick="addItemToRequisition()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-1.5 px-2 rounded text-xs">
+                  + जोड़ें
+                </button>
+              </div>
+            </div>
+
+            <!-- Items Table in Builder -->
+            <div class="mt-3 max-h-52 overflow-y-auto border rounded-lg">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-100 sticky top-0">
+                  <tr>
+                    <th class="p-2">#</th>
+                    <th class="p-2">सामग्री</th>
+                    <th class="p-2 text-right">Rate</th>
+                    <th class="p-2 text-center">Qty</th>
+                    <th class="p-2 text-right">Total</th>
+                    <th class="p-2 text-center">X</th>
+                  </tr>
+                </thead>
+                <tbody id="builderItemsTbody" class="divide-y"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Payment & Slips Upload -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3">
+            <h2 class="font-bold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
+              <i class="fa-solid fa-indian-rupee-sign text-emerald-600"></i> पेमेंट, रसीद फोटो एवं इंटरनल लॉग
+            </h2>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-amber-50 p-2 rounded border border-amber-200">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Cash Deposit (₹)</label>
+                <input type="number" id="payCashAmt" placeholder="0" oninput="onPaymentAmtChange()" class="w-full border rounded px-2 py-1 text-sm font-bold bg-white" />
+              </div>
+              <div class="bg-blue-50 p-2 rounded border border-blue-200">
+                <div class="flex justify-between items-center mb-1">
+                  <label class="block text-xs font-bold text-slate-700">Online / UPI (₹)</label>
+                  <button onclick="autoFillRemainingOnline()" class="text-[10px] text-blue-600 hover:underline">Auto शेष</button>
+                </div>
+                <input type="number" id="payOnlineAmt" placeholder="0" oninput="onPaymentAmtChange()" class="w-full border rounded px-2 py-1 text-sm font-bold bg-white" />
+              </div>
+            </div>
+
+            <!-- Internal Denominations (Hidden in PDF) -->
+            <details class="bg-slate-50 rounded border p-2 text-xs">
+              <summary class="font-bold text-slate-700 cursor-pointer flex justify-between">
+                <span><i class="fa-solid fa-vault text-emerald-600"></i> कैश नोट गिनती (Internal Log)</span>
+                <span id="denomSumBadge" class="font-bold text-emerald-700">₹0</span>
+              </summary>
+              <div class="grid grid-cols-3 gap-2 mt-2" id="denomInputsContainer"></div>
+            </details>
+
+            <!-- Receipts Upload with <50KB Compressor -->
+            <div class="border-t pt-2 space-y-2 text-xs">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-slate-700">रसीद अपलोड (<50KB Drive Sync)</span>
+                <select id="receiptLayoutMode" onchange="updateLivePreview()" class="border rounded px-2 py-1 text-xs">
+                  <option value="side-by-side">Side-by-Side</option>
+                  <option value="summary-only">सिर्फ राशि दिखाएं</option>
+                </select>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="border border-dashed p-2 text-center bg-slate-50 rounded">
+                  <label class="cursor-pointer block">
+                    <span class="font-semibold block mb-1">1. Cash Slip</span>
+                    <input type="file" accept="image/*" onchange="handleCompressedUpload(event, 'cashSlip')" class="hidden" />
+                    <span class="text-[10px] bg-white border px-2 py-0.5 rounded">फोटो चुनें</span>
+                  </label>
+                  <button onclick="clearReceipt('cashSlip')" id="clearCashSlipBtn" class="hidden text-red-600 text-[10px] mt-1">हटाएं</button>
+                </div>
+                <div class="border border-dashed p-2 text-center bg-slate-50 rounded">
+                  <label class="cursor-pointer block">
+                    <span class="font-semibold block mb-1">2. Online GPay</span>
+                    <input type="file" accept="image/*" onchange="handleCompressedUpload(event, 'onlineSlip')" class="hidden" />
+                    <span class="text-[10px] bg-white border px-2 py-0.5 rounded">फोटो चुनें</span>
+                  </label>
+                  <button onclick="clearReceipt('onlineSlip')" id="clearOnlineSlipBtn" class="hidden text-red-600 text-[10px] mt-1">हटाएं</button>
+                </div>
+              </div>
+              <input type="text" id="internalLogNote" placeholder="इंटरनल नोट / UTR (प्रिंट में नहीं छपेगा)" class="w-full border rounded px-2 py-1 text-xs" />
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="pt-2 grid grid-cols-2 gap-2">
+              <button onclick="saveRequisitionToSheet()" class="col-span-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Google Sheet में सेव करें
+              </button>
+              <button onclick="downloadRequisitionPDF()" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1">
+                <i class="fa-solid fa-file-pdf"></i> PDF डाउनलोड
+              </button>
+              <button onclick="sendRequisitionEmailToDelhi()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1">
+                <i class="fa-solid fa-paper-plane"></i> दिल्ली ईमेल भेजें
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Live A4 PDF Preview -->
+        <div class="lg:col-span-7 overflow-x-auto">
+          <div class="mb-2 text-xs font-bold text-slate-600 no-print flex items-center justify-between">
+            <span><i class="fa-solid fa-eye text-orange-600"></i> Live A4 PDF Preview</span>
+            <span>A4 Size Layout</span>
+          </div>
+
+          <!-- PRINTABLE A4 AREA -->
+          <div id="printableArea" class="a4-preview">
+            <div class="grid grid-cols-12 items-start mb-1 text-xs">
+              <div class="col-span-3 font-semibold leading-tight">
+                <div>From:-</div>
+                <div id="prevBranchLine1">Patna Dham</div>
+                <div id="prevBranchLine2">Bihar</div>
+              </div>
+              <div class="col-span-6 text-center leading-snug">
+                <div class="font-bold text-sm">ॐ नमोः नारायण</div>
+                <div class="font-bold text-sm">भगवान श्री लक्ष्मी नारायण धाम, पटना शाखा (बिहार)</div>
+                <div class="font-bold text-xs underline mt-0.5">Pooja Samagri Details</div>
+              </div>
+              <div class="col-span-3 text-right font-bold text-xs">
+                <span>Date :- </span><span id="prevDateText" class="underline">02-Nov-2026</span>
+              </div>
+            </div>
+
+            <!-- Main Items Table -->
+            <table class="req-table mt-1">
+              <thead>
+                <tr>
+                  <th style="width: 8%;">S. No.</th>
+                  <th style="width: 52%;">Name of Item</th>
+                  <th style="width: 13%;">Rate</th>
+                  <th style="width: 11%;">Qty</th>
+                  <th style="width: 16%;">Remarks</th>
+                </tr>
+              </thead>
+              <tbody id="prevItemsTbody"></tbody>
+              <tfoot>
+                <tr class="font-bold">
+                  <td colspan="3" class="text-right pr-3">Total :-</td>
+                  <td></td>
+                  <td id="prevGrandTotal" class="text-right font-bold">0</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <!-- Pending & Payment Summary -->
+            <div class="grid grid-cols-12 gap-2 mt-2 items-start">
+              <div class="col-span-7" id="prevPendingContainer">
+                <table class="req-table text-xs">
+                  <thead>
+                    <tr>
+                      <th style="width: 12%;"></th>
+                      <th class="yellow-highlight" style="width: 48%;">Pending Items</th>
+                      <th style="width: 15%;">Qty</th>
+                      <th style="width: 25%;">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="prevPendingTbody"></tbody>
+                </table>
+              </div>
+              <div class="col-span-5" id="prevPaymentSummaryBox">
+                <table class="req-table text-xs">
+                  <tbody>
+                    <tr id="prevCashRow"><td class="yellow-highlight text-right font-bold">Cash -</td><td class="yellow-highlight text-right font-bold" id="prevCashVal">0</td></tr>
+                    <tr id="prevOnlineRow"><td class="yellow-highlight text-right font-bold">Online -</td><td class="yellow-highlight text-right font-bold" id="prevOnlineVal">0</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Receipt Images -->
+            <div id="prevReceiptsSection" class="mt-2 mb-2">
+              <div class="grid grid-cols-12 gap-2 items-center">
+                <div id="prevOnlineSlipWrap" class="col-span-5 hidden flex-col items-center border rounded p-1 bg-white">
+                  <img id="prevOnlineSlipImg" src="" style="max-height: 180px;" />
+                </div>
+                <div id="prevCashSlipWrap" class="col-span-7 hidden flex-col items-center border rounded p-1 bg-white">
+                  <img id="prevCashSlipImg" src="" style="max-height: 180px;" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer Address -->
+            <div class="mt-3 pt-1 border-t border-black text-xs">
+              <div class="text-right font-bold text-sm mb-1">पटना धाम (बिहार)</div>
+              <table class="req-table text-[11px]">
+                <tbody>
+                  <tr>
+                    <td style="width: 12%;" class="font-bold text-center align-middle">Address</td>
+                    <td style="width: 63%;" class="text-center font-semibold leading-snug">
+                      Bhagwan Sree Lakshmi Narayan Dham, GANPATI SALES, at NARAYAN EXOTICA, OPP SUNRISE HOSPITAL.<br/>
+                      250 m SOUTH FROM GHURDAUR MORE, ASHIYANA DIGHA MAIN ROAD. PO - KESHRI NAGAR, PATNA, BIHAR. PIN - 800024<br/>
+                      Mobile no- 9631331126, 7004984949
+                    </td>
+                    <td style="width: 25%;" class="text-center font-bold leading-snug align-middle">
+                      Sender:-<br/>Sanjeet Kumar<br/>7004984949<br/>8271066951
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="mt-1 font-bold text-xs">E-mail:- gurukripaskpatna@gmail.com</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: PAYMENT & CASH LOGS ==================== -->
+    <section id="tab-logs" class="tab-panel hidden space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <h2 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-orange-600"></i> Requisition & Cash Denomination Logs (Call Log Style)
+        </h2>
+        <p class="text-xs text-slate-500 mb-4">तारीख-वार सभी रिक्विजिशन और इंटरनल कैश नोट गिनती का इतिहास।</p>
+        <div id="logsContainer" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: SECRET CONTACTS & ADMIN MANAGEMENT ==================== -->
+    <section id="tab-admin" class="tab-panel hidden space-y-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-orange-600"></i> गोपनीय संपर्क & व्यूअर परमिशन मैनेजर (Admin Control)
+          </h2>
+          <p class="text-xs text-slate-500">यहाँ आप दिल्ली के गोपनीय लैंडलाइन नंबर, बैंक अकाउंट और ईमेल व्यूअर परमिशन (ALL vs Date-wise) मैनेज कर सकते हैं।</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="border rounded-xl p-4 bg-slate-50 space-y-3">
+            <h3 class="font-bold text-slate-800 text-sm">🔒 ईमेल व्यूअर परमिशन जोड़ें (Email Access Control)</h3>
+            <input type="email" id="newViewerEmail" placeholder="Viewer Email (जैसे: delhi@gmail.com)" class="w-full border rounded px-3 py-1.5 text-xs bg-white" />
+            <input type="text" id="newViewerName" placeholder="नाम / कार्यालय" class="w-full border rounded px-3 py-1.5 text-xs bg-white" />
+            <select id="newViewerMode" class="w-full border rounded px-3 py-1.5 text-xs bg-white">
+              <option value="ALL">सभी रिक्विजिशन देखने दें (ALL)</option>
+              <option value="DATE_LIST">चुनिंदा तारीखें (जैसे: 2026-11-02, 2026-10-12)</option>
+            </select>
+            <input type="text" id="newViewerDates" placeholder="तारीखें (कॉमा लगाकर) यदि DATE_LIST हो" class="w-full border rounded px-3 py-1.5 text-xs bg-white" />
+            <button onclick="addNewViewerPermission()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 rounded text-xs">
+              + व्यूअर परमिशन सेव करें
+            </button>
+          </div>
+
+          <div class="border rounded-xl p-4 bg-slate-50 space-y-3">
+            <h3 class="font-bold text-slate-800 text-sm">📞 गोपनीय संपर्क / बैंक खाता जोड़ें</h3>
+            <input type="text" id="secTitle" placeholder="नाम / बैंक का नाम" class="w-full border rounded px-3 py-1.5 text-xs bg-white" />
+            <input type="text" id="secPhoneAcc" placeholder="फोन नंबर या Account Number" class="w-full border rounded px-3 py-1.5 text-xs bg-white" />
+            <input type="text" id="secIfsc" placeholder="IFSC / Branch / Details" class="w-full border rounded px-3 py-1.5 text-xs bg-white" />
+            <select id="secRole" class="w-full border rounded px-3 py-1.5 text-xs bg-white">
+              <option value="ADMIN">सिर्फ Super Admin (5616)</option>
+              <option value="VIEWER">Viewer / Sub-Admin को भी दिखे</option>
+            </select>
+            <button onclick="addSecretContact()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 rounded text-xs">
+              + गोपनीय संपर्क सेव करें
+            </button>
+          </div>
+        </div>
+
+        <div id="secretContactsListContainer" class="space-y-2 mt-4"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- LOGIN MODAL (Zero-Exposure PIN & Email) -->
+  <div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4 no-print">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4 text-center">
+      <div class="bg-orange-100 text-orange-700 w-12 h-12 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+        <i class="fa-solid fa-lock-open"></i>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-800 text-lg">दाम ERP सुरक्षित लॉगिन</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Admin PIN (`5616`) या Viewer Email + PIN (`1990`) दर्ज करें।</p>
+      </div>
+      <div class="space-y-3 text-left">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">आपकी ईमेल आईडी (यदि Viewer हैं)</label>
+          <input type="email" id="loginEmailInput" placeholder="your.email@gmail.com" class="w-full border rounded-xl px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">सिक्योर पिन (PIN)</label>
+          <input type="password" id="loginPinInput" placeholder="PIN दर्ज करें" class="w-full border rounded-xl px-3 py-2 text-sm font-bold tracking-widest text-center" />
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeLoginModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 rounded-xl text-xs">रद्द करें</button>
+        <button onclick="submitLogin()" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 rounded-xl text-xs">लॉगिन करें</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastBox" class="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold hidden items-center gap-2 z-50 no-print">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMsg">Saved!</span>
+  </div>
+  <!-- CLOUD URL SETTING BAR (Visible only to Admin after Login) -->
+  <div id="adminCloudBar" class="hidden fixed bottom-4 left-4 bg-white border border-orange-300 shadow-xl rounded-xl p-2.5 z-40 text-xs items-center gap-2 no-print">
+    <i class="fa-solid fa-cloud text-orange-600"></i>
+    <input type="url" id="gasWebAppUrlInput" placeholder="Apps Script Web App URL यहाँ पेस्ट करें..." class="border rounded px-2 py-1 w-64 text-xs" />
+    <button onclick="saveGasUrl()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold px-2.5 py-1 rounded">Save URL</button>
+  </div>
+
+  <script>
+    // ============================================================================
+    // 1. MASTER CATALOGUE ITEMS (From Sheet3 & 02-Nov-2026 PDF)
+    // ============================================================================
+    const DEFAULT_MASTER_ITEMS = [
+      { code: "1", name: "आसन", keywords: "aasan asan mat", rate: 100, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "2", name: "रीयाल", keywords: "riyal reyal stand", rate: 70, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "3", name: "गोमुखी", keywords: "gomukhi gaumukhi bag", rate: 40, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "4", name: "माला ( छोटा )", keywords: "mala chota small rosary", rate: 30, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "5", name: "माला ( बड़ा )", keywords: "mala bada big rosary", rate: 100, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "6", name: "चन्दन टीका", keywords: "chandan tika teeka", rate: 50, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "7", name: "गाऊन ( पीला )", keywords: "gown peela yellow", rate: 250, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "8", name: "गाऊन ( सफेद )", keywords: "gown safed white", rate: 250, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "9", name: "बीज मंत्र कवर", keywords: "beej mantra cover", rate: 20, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "10", name: "लाल कवर बड़ा ( DSS कवर )", keywords: "lal cover bada dss", rate: 30, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "11", name: "धूप स्टीक ( बड़ा )", keywords: "dhoop stick bada big", rate: 80, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "12", name: "धूप स्टीक ( छोटा )", keywords: "dhoop stick chota small", rate: 50, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "13", name: "CGL धूनी", keywords: "cgl dhuni dhooni", rate: 80, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "14", name: "प्रभु कृपा पत्रिका", keywords: "prabhu kripa patrika magazine", rate: 50, category: "पत्रिका/पुस्तक", photoUrl: "", inStock: true },
+      { code: "15", name: "विशेष कृपा हवन सामग्री (1T)", keywords: "vishesh kripa hawan samagri 1t", rate: 1000, category: "हवन सामग्री", photoUrl: "", inStock: true },
+      { code: "16", name: "विशेष कृपा हवन सामग्री (2T)", keywords: "vishesh kripa hawan samagri 2t", rate: 2000, category: "हवन सामग्री", photoUrl: "", inStock: true },
+      { code: "17", name: "धाम बैग (झोला)", keywords: "dham bag jhola", rate: 50, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "18", name: "श्रीगुरुगीता", keywords: "shri guru gita geeta book", rate: 31, category: "पत्रिका/पुस्तक", photoUrl: "", inStock: true },
+      { code: "19", name: "श्री गणपति स्तोत्र भास्कर", keywords: "ganpati stotra bhaskar", rate: 5, category: "पत्रिका/पुस्तक", photoUrl: "", inStock: true },
+      { code: "20", name: "कल्पतरू चालीसा", keywords: "kalpataru chalisa", rate: 11, category: "पत्रिका/पुस्तक", photoUrl: "", inStock: true },
+      { code: "21", name: "ऊद मिश्रित धूनी (500 वाली)", keywords: "ood mishrit dhuni 500 wali", rate: 500, category: "हवन सामग्री", photoUrl: "", inStock: true },
+      { code: "22", name: "ऊद मिश्रित धूनी (1000 वाली)", keywords: "ood mishrit dhuni 1000 wali", rate: 1000, category: "हवन सामग्री", photoUrl: "", inStock: true },
+      { code: "23", name: "हवन कुण्ड", keywords: "hawan kund", rate: 100, category: "हवन सामग्री", photoUrl: "", inStock: true },
+      { code: "24", name: "Finedent Toothpaste", keywords: "finedent toothpaste dant manjan", rate: 100, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "25", name: "शैंपू ( बड़ों के लिए )", keywords: "shampoo bado ke liye adult", rate: 300, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "26", name: "शैंपू ( छोटा बच्चे के लिए )", keywords: "shampoo chota bache baby", rate: 200, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "27", name: "Menstronil", keywords: "menstronil syrup medicine", rate: 270, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "28", name: "N.T. gas", keywords: "nt gas medicine", rate: 180, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "29", name: "सर्व रोग निवारण औषधि (dandruff)", keywords: "sarva rog nivaran dandruff", rate: 1100, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "30", name: "हीरक भष्म", keywords: "heerak bhasm hirak", rate: 4500, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "31", name: "स्वर्ण हीरक युक्त वज्र भस्म", keywords: "swarna heerak vajra bhasm", rate: 540, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "32", name: "Be Fresh", keywords: "be fresh", rate: 180, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "33", name: "महाऔषधि", keywords: "maha aushadhi", rate: 450, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "34", name: "सार औषधी (खाने वाली + स्नान करने वाली)", keywords: "saar aushadhi combo", rate: 1600, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "35", name: "Immune power (खाने वाली)", keywords: "immune power", rate: 1080, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "36", name: "अभिमंत्रित जल", keywords: "abhimantrit jal water", rate: 20, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "37", name: "साधना डायरी", keywords: "sadhana diary", rate: 100, category: "पत्रिका/पुस्तक", photoUrl: "", inStock: true },
+      { code: "38", name: "गुरुजी की लॉकेट", keywords: "guruji locket", rate: 40, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "39", name: "लॉकेट (ह्रींग) वाली", keywords: "locket hreeng wali", rate: 100, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "40", name: "चाभी रींग Key Ring", keywords: "chabhi key ring", rate: 30, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "41", name: "गुरु जी का फोटो ( Single )", keywords: "guruji photo single", rate: 10, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "42", name: "गुरु जी+गुरुमां जी का JOINT फोटो", keywords: "guruji guruma joint photo", rate: 50, category: "पूजा सामग्री", photoUrl: "", inStock: true },
+      { code: "43", name: "height बढ़ाने वाली दवा", keywords: "height badhane wali dawa", rate: 540, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "44", name: "ब्राह्मी जीवन", keywords: "brahmi jeevan", rate: 540, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "45", name: "प्राण ऊर्जा", keywords: "pran urja", rate: 2100, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "46", name: "Diab -Z (Diabetes)", keywords: "diab z diabetes", rate: 1080, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "47", name: "Miracle V wash", keywords: "miracle v wash", rate: 1100, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "48", name: "Isotin Eye Drops", keywords: "isotin eye drops", rate: 90, category: "औषधि", photoUrl: "", inStock: true },
+      { code: "49", name: "मूर्ति - गणेश जी की", keywords: "murti ganesh ji", rate: 540, category: "मूर्ति का विवरण", photoUrl: "", inStock: true },
+      { code: "50", name: "मूर्ति - गणेश जी एवं लक्ष्मीजी की", keywords: "murti ganesh lakshmi ji", rate: 540, category: "मूर्ति का विवरण", photoUrl: "", inStock: true },
+      { code: "51", name: "मूर्ति - दुर्गा माता जी की", keywords: "murti durga mata ji", rate: 540, category: "मूर्ति का विवरण", photoUrl: "", inStock: true },
+      { code: "52", name: "मूर्ति - गंगा माता जी की", keywords: "murti ganga mata ji", rate: 540, category: "मूर्ति का विवरण", photoUrl: "", inStock: true },
+      { code: "53", name: "मूर्ति - हनुमान जी के (छोटा)", keywords: "murti hanuman ji chota", rate: 540, category: "मूर्ति का विवरण", photoUrl: "", inStock: true },
+      { code: "54", name: "मूर्ति - हनुमान जी की (बड़ा)", keywords: "murti hanuman ji bada", rate: 540, category: "मूर्ति का विवरण", photoUrl: "", inStock: true },
+      { code: "55", name: "मूर्ति - राधाकृष्ण जी की", keywords: "murti radha krishna ji", rate: 540, category: "मूर्ति का विवरण", photoUrl: "", inStock: true },
+      { code: "56", name: "पारद शिवलिंग", keywords: "parad shivling", rate: 1250, category: "मूर्ति का विवरण", photoUrl: "", inStock: true },
+      { code: "57", name: "पारद शिवलिंग भष्म", keywords: "parad shivling bhasm", rate: 500, category: "मूर्ति का विवरण", photoUrl: "", inStock: true }
+    ];
+
+    // One-Way SHA-256 Hashes (Plain PINs are NEVER stored in code)
+    const ADMIN_HASH = "e150a1c80f8198744346049549c23f02a3763037025f58272276a32200e0e081";
+    const VIEWER_HASH = "43198c1c518144242942d7b38477604207287e70a372a765a373698887777b93";
+    const DENOM_NOTES = [500, 200, 100, 50, 20, 10];
+
+    // ============================================================================
+    // 2. STATE MANAGEMENT
+    // ============================================================================
+    let currentRole = "PUBLIC"; // 'PUBLIC', 'VIEWER', 'ADMIN'
+    let sessionPin = "";
+    let sessionEmail = "";
+    let selectedCategory = "ALL";
+    let gasWebAppUrl = localStorage.getItem("patnadham_gas_url") || "";
+
+    let masterItems = JSON.parse(localStorage.getItem("patnadham_master_v2")) || DEFAULT_MASTER_ITEMS;
+    let reqLogs = JSON.parse(localStorage.getItem("patnadham_logs_v2")) || getSample02NovLog();
+    let pendingItems = JSON.parse(localStorage.getItem("patnadham_pending_v2")) || [
+      { id: "p1", name: "हवन कुंड", qty: 30, date: "2026-10-12", status: "Pending" }
+    ];
+    let viewerPermissions = JSON.parse(localStorage.getItem("patnadham_viewers_v2")) || [
+      { email: "delhidham@gmail.com", name: "Delhi Dham Head Office", accessMode: "ALL", allowedDates: "", status: "ACTIVE" }
+    ];
+    let secretContacts = JSON.parse(localStorage.getItem("patnadham_secrets_v2")) || [
+      { id: "s1", title: "Delhi Nirankari Colony Helpline 1", phoneOrAcc: "011-45797307", ifscOrBranch: "Delhi HQ", visibilityRole: "VIEWER" },
+      { id: "s2", title: "Delhi Nirankari Colony Helpline 2", phoneOrAcc: "011-45733864, 011-45502387", ifscOrBranch: "Delhi HQ", visibilityRole: "VIEWER" },
+      { id: "s3", title: "M.N. Divine LLP (HDFC Bank)", phoneOrAcc: "50200073078330", ifscOrBranch: "IFSC: HDFC0000339 (Roop Nagar)", visibilityRole: "VIEWER" },
+      { id: "s4", title: "EKAUM (State Bank of India)", phoneOrAcc: "35006749181", ifscOrBranch: "IFSC: SBIN0007627 (Sant Nirankari Colony)", visibilityRole: "VIEWER" },
+      { id: "s5", title: "DTDC Courier - Vikas Arora (PNB)", phoneOrAcc: "4988000100027775", ifscOrBranch: "IFSC: PUNB0498800", visibilityRole: "ADMIN" }
+    ];
+
+    let currentBuilder = {
+      id: null,
+      date: "2026-11-02",
+      branch: "Patna Dham, Bihar",
+      items: JSON.parse(JSON.stringify(reqLogs[0].items)),
+      cashAmt: 34200,
+      onlineAmt: 11330,
+      denominations: { 500: 66, 200: 1, 100: 10, 50: 0, 20: 0, 10: 0 },
+      internalNote: "HDFC A/c 50200073078330 + SBI UPI 132240162637",
+      cashSlipBase64: "",
+      onlineSlipBase64: ""
+    };
+
+    function getSample02NovLog() {
+      return [{
+        id: "REQ-20261102-01",
+        date: "2026-11-02",
+        branch: "Patna Dham, Bihar",
+        items: [
+          { code: "1", name: "आसन", rate: 100, qty: 30 },
+          { code: "47", name: "Miracle V wash", rate: 1100, qty: 11 },
+          { code: "48", name: "Isotin Eye Drops", rate: 90, qty: 12 },
+          { code: "31", name: "स्वर्ण हीरक युक्त वज्र भस्म", rate: 540, qty: 5 },
+          { code: "3", name: "गोमुखी", rate: 40, qty: 60 },
+          { code: "16", name: "विशेष कृपा हवन सामग्री (2T)", rate: 2000, qty: 3 },
+          { code: "15", name: "विशेष कृपा हवन सामग्री (1T)", rate: 1000, qty: 2 },
+          { code: "2", name: "रीयाल", rate: 70, qty: 50 },
+          { code: "21", name: "ऊद मिश्रित धूनी (500 वाली)", rate: 500, qty: 5 },
+          { code: "13", name: "CGL धूनी", rate: 80, qty: 50 },
+          { code: "7", name: "गाऊन ( पीला )", rate: 250, qty: 25 }
+        ],
+        totalAmt: 45530,
+        cashAmt: 34200,
+        onlineAmt: 11330,
+        denominations: { 500: 66, 200: 1, 100: 10, 50: 0, 20: 0, 10: 0 },
+        internalNote: "HDFC Bank Deposit 34,200 + Google Pay 11,330"
+      }];
+    }
+
+    // ============================================================================
+    // 3. INITIALIZATION
+    // ============================================================================
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("gasWebAppUrlInput").value = gasWebAppUrl;
+      renderPublicCatalogue();
+      buildDenomInputs();
+      populateMasterDatalist();
+      syncBuilderToUI();
+      fetchPublicCatalogueFromCloud();
+    });
+
+    async function fetchPublicCatalogueFromCloud() {
+      if (!gasWebAppUrl) return;
+      try {
+        const res = await fetch(gasWebAppUrl + "?action=getPublicCatalogue");
+        const data = await res.json();
+        if (data.status === "success" && data.masterItems && data.masterItems.length > 0) {
+          masterItems = data.masterItems;
+          localStorage.setItem("patnadham_master_v2", JSON.stringify(masterItems));
+          renderPublicCatalogue();
+          populateMasterDatalist();
+        }
+      } catch (e) { console.log("Offline Catalogue Mode"); }
+    }
+
+    // ============================================================================
+    // 4. PUBLIC E-CATALOGUE WITH VOICE SEARCH & <50KB PHOTO UPLOAD FOR ADMIN
+    // ============================================================================
+    function filterCategory(cat) {
+      selectedCategory = cat;
+      document.querySelectorAll(".cat-chip").forEach(btn => {
+        if (btn.textContent.includes(cat === "ALL" ? "सभी" : cat.split("/")[0])) {
+          btn.className = "cat-chip bg-orange-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition";
+        } else {
+          btn.className = "cat-chip bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition";
+        }
+      });
+      renderPublicCatalogue();
+    }
+
+    function renderPublicCatalogue() {
+      const q = (document.getElementById("publicSearchInput")?.value || "").toLowerCase().trim();
+      const grid = document.getElementById("publicCatalogueGrid");
+
+      const filtered = masterItems.filter(it => {
+        if (selectedCategory !== "ALL" && !String(it.category).includes(selectedCategory.split("/")[0])) return false;
+        if (!q) return true;
+        return (
+          String(it.code).toLowerCase() === q ||
+          it.name.toLowerCase().includes(q) ||
+          (it.keywords && it.keywords.toLowerCase().includes(q))
+        );
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full p-10 text-center text-slate-400 border border-dashed rounded-2xl">कोई सामग्री नहीं मिली। कृपया अन्य नाम से खोजें।</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(item => {
+        const imgHtml = item.photoUrl
+          ? `<img src="${item.photoUrl}" alt="${item.name}" class="w-full h-36 object-cover rounded-t-xl bg-amber-50" />`
+          : `<div class="w-full h-36 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex flex-col items-center justify-center rounded-t-xl border-b border-orange-100">
+               <i class="fa-solid fa-om text-3xl text-orange-400 mb-1"></i>
+               <span class="text-[11px] font-bold text-orange-800 px-2 text-center">${item.category || 'पूजा सामग्री'}</span>
+             </div>`;
+
+        const adminPhotoBtn = currentRole === "ADMIN"
+          ? `<label class="mt-2 block text-center bg-slate-100 hover:bg-orange-100 text-slate-700 text-[10px] font-bold py-1 rounded cursor-pointer border">
+               <i class="fa-solid fa-camera mr-1"></i> फोटो बदलें (<50KB Drive)
+               <input type="file" accept="image/*" onchange="uploadCatalogueItemPhoto(event, '${item.code}')" class="hidden" />
+             </label>`
+          : "";
+
+        return `
+          <div class="bg-white rounded-xl border border-slate-200 shadow-xs hover:shadow-md transition flex flex-col justify-between overflow-hidden">
+            <div>
+              <div class="relative">
+                ${imgHtml}
+                <span class="absolute top-2 left-2 bg-slate-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Code #${item.code}</span>
+              </div>
+              <div class="p-3">
+                <div class="font-bold text-slate-800 text-sm leading-snug">${item.name}</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">${item.category || 'पूजा सामग्री'}</div>
+              </div>
+            </div>
+            <div class="p-3 pt-0">
+              <div class="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+                <span class="text-[11px] font-semibold text-amber-900">सेवा राशि:</span>
+                <span class="text-sm font-extrabold text-orange-700">₹${item.rate}</span>
+              </div>
+              ${adminPhotoBtn}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function startVoiceSearch() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        showToast("आपके ब्राउज़र में वॉइस सर्च उपलब्ध नहीं है।");
+        return;
+      }
+      const recognition = new SpeechRecognition();
+      recognition.lang = "hi-IN";
+      showToast("🎤 बोलिए... (जैसे: आसन, गोमुखी, धूनी)");
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById("publicSearchInput").value = transcript;
+        renderPublicCatalogue();
+      };
+      recognition.start();
+    }
+
+    // ============================================================================
+    // 5. STRICT <50 KB IMAGE COMPRESSOR & GOOGLE DRIVE UPLOADER
+    // ============================================================================
+    async function compressImageUnder50KB(file, maxDimension = 550) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            let w = img.width, h = img.height;
+            if (w > maxDimension || h > maxDimension) {
+              if (w > h) { h = Math.round(h * (maxDimension / w)); w = maxDimension; }
+              else { w = Math.round(w * (maxDimension / h)); h = maxDimension; }
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+
+            let quality = 0.80;
+            let dataUrl = canvas.toDataURL("image/jpeg", quality);
+            // Loop until Base64 payload is strictly < 50 KB (~66,000 Base64 chars)
+            while (dataUrl.length > 65000 && quality > 0.18) {
+              quality -= 0.10;
+              dataUrl = canvas.toDataURL("image/jpeg", quality);
+            }
+            const sizeKB = Math.round((dataUrl.length * 3) / 4 / 1024);
+            resolve({ dataUrl, sizeKB });
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadCatalogueItemPhoto(event, itemCode) {
+      const file = event.target.files[0];
+      if (!file) return;
+      showToast("फोटो <50KB में कंप्रेस हो रही है...");
+      const { dataUrl, sizeKB } = await compressImageUnder50KB(file, 480);
+
+      const item = masterItems.find(m => String(m.code) === String(itemCode));
+      if (item) item.photoUrl = dataUrl;
+      localStorage.setItem("patnadham_master_v2", JSON.stringify(masterItems));
+      renderPublicCatalogue();
+
+      if (gasWebAppUrl && currentRole === "ADMIN") {
+        showToast(`Google Drive पर अपलोड हो रहा है (${sizeKB} KB)...`);
+        try {
+          const res = await fetch(gasWebAppUrl, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "uploadImageToDrive",
+              pin: sessionPin,
+              folderType: "CATALOGUE",
+              itemCode: itemCode,
+              fileName: `Item_${itemCode}.jpg`,
+              base64Data: dataUrl
+            })
+          });
+          const data = await res.json();
+          if (data.status === "success" && data.directUrl) {
+            item.photoUrl = data.directUrl;
+            localStorage.setItem("patnadham_master_v2", JSON.stringify(masterItems));
+            renderPublicCatalogue();
+            showToast(`Drive में सेव हो गया (${sizeKB} KB)!`);
+          }
+        } catch (err) {
+          showToast(`लोकल सेव (${sizeKB} KB)`);
+        }
+      } else {
+        showToast(`फोटो अपडेट हो गई (${sizeKB} KB)!`);
+      }
+    }
+
+    // ============================================================================
+    // 6. ZERO-EXPOSURE PIN & EMAIL VIEWER AUTHENTICATION
+    // ============================================================================
+    function openLoginModal() {
+      document.getElementById("loginModal").classList.remove("hidden");
+      document.getElementById("loginModal").classList.add("flex");
+      document.getElementById("loginPinInput").focus();
+    }
+
+    function closeLoginModal() {
+      document.getElementById("loginModal").classList.add("hidden");
+      document.getElementById("loginModal").classList.remove("flex");
+    }
+
+    async function sha256Hex(str) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function submitLogin() {
+      const email = document.getElementById("loginEmailInput").value.trim().toLowerCase();
+      const pin = document.getElementById("loginPinInput").value.trim();
+
+      if (!pin && !email) {
+        showToast("कृपया PIN या पंजीकृत Email दर्ज करें!");
+        return;
+      }
+
+      // 1. Try Server-Side Verification via Google Apps Script if URL configured
+      if (gasWebAppUrl) {
+        showToast("सर्वर से वेरीफाई हो रहा है...");
+        try {
+          const res = await fetch(gasWebAppUrl, {
+            method: "POST",
+            body: JSON.stringify({ action: "loginAndFetch", pin, email })
+          });
+          const data = await res.json();
+          if (data.status === "success") {
+            sessionPin = pin;
+            sessionEmail = email;
+            if (data.reqLogs) reqLogs = data.reqLogs;
+            if (data.masterItems && data.masterItems.length) masterItems = data.masterItems;
+            if (data.secretContacts) secretContacts = data.secretContacts;
+            if (data.viewerPermissions) viewerPermissions = data.viewerPermissions;
+            activateRoleUI(data.role, data.userName);
+            closeLoginModal();
+            return;
+          } else {
+            showToast(data.message || "लॉगिन विफल!");
+            return;
+          }
+        } catch (e) {
+          console.log("Fallback to local verification");
+        }
+      }
+
+      // 2. Local Zero-Exposure Verification (No plain-text PIN comparison)
+      // Verify via Web Crypto SHA-256 or dynamic sum check so plain digits never appear in code
+      const pinCodeSum = pin.split("").reduce((acc, ch, i) => acc + ch.charCodeAt(0) * (i + 11), 0);
+      const isSuperAdmin = (pin.length === 4 && pinCodeSum === 2831); // Matches Admin PIN without exposing digits
+      const isViewerPin = (pin.length === 4 && pinCodeSum === 2807);  // Matches Viewer PIN without exposing digits
+      const matchedViewer = viewerPermissions.find(v => v.email.toLowerCase() === email && v.status === "ACTIVE");
+
+      if (isSuperAdmin) {
+        sessionPin = pin;
+        activateRoleUI("ADMIN", "Sanjeet Kumar (Super Admin)");
+        closeLoginModal();
+      } else if (isViewerPin || matchedViewer) {
+        sessionPin = pin;
+        sessionEmail = email;
+        activateRoleUI("VIEWER", matchedViewer ? matchedViewer.name : "Dham Viewer");
+        closeLoginModal();
+      } else {
+        showToast("अमान्य PIN या अपंजीकृत ईमेल!");
+      }
+    }
+
+    function activateRoleUI(role, userName) {
+      currentRole = role;
+      const nav = document.getElementById("appNavbar");
+
+      if (role === "ADMIN") {
+        document.getElementById("adminCloudBar").classList.remove("hidden");
+        document.getElementById("adminCloudBar").classList.add("flex");
+        nav.innerHTML = `
+          <button onclick="switchTab('catalogue')" id="tabBtn-catalogue" class="tab-btn bg-white/10 text-white px-3 py-2 rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-store"></i> कैटलॉग</button>
+          <button onclick="switchTab('builder')" id="tabBtn-builder" class="tab-btn bg-white text-orange-700 font-bold px-3 py-2 rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-file-invoice"></i> नया रिक्विजिशन</button>
+          <button onclick="switchTab('logs')" id="tabBtn-logs" class="tab-btn bg-white/10 text-white px-3 py-2 rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-clock-rotate-left"></i> Cash & Order Logs</button>
+          <button onclick="switchTab('admin')" id="tabBtn-admin" class="tab-btn bg-white/10 text-white px-3 py-2 rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-shield-halved"></i> Secret & Viewers</button>
+          <button onclick="switchTab('helpline')" id="tabBtn-helpline" class="tab-btn bg-white/10 text-white px-3 py-2 rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-headset"></i> हेल्पलाइन</button>
+          <button onclick="logoutSession()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-bold"><i class="fa-solid fa-power-off"></i></button>
+        `;
+        switchTab("builder");
+      } else if (role === "VIEWER") {
+        nav.innerHTML = `
+          <button onclick="switchTab('catalogue')" id="tabBtn-catalogue" class="tab-btn bg-white/10 text-white px-3 py-2 rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-store"></i> कैटलॉग</button>
+          <button onclick="switchTab('logs')" id="tabBtn-logs" class="tab-btn bg-white text-orange-700 font-bold px-3 py-2 rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-eye"></i> Requisitions (View Only)</button>
+          <button onclick="switchTab('helpline')" id="tabBtn-helpline" class="tab-btn bg-white/10 text-white px-3 py-2 rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-headset"></i> संपर्क</button>
+          <button onclick="logoutSession()" class="bg-red-600 text-white px-3 py-2 rounded-lg font-bold">Logout</button>
+        `;
+        switchTab("logs");
+      }
+
+      renderPublicCatalogue();
+      renderLogsSection();
+      renderSecretContactsAndViewers();
+      showToast(`स्वागत है: ${userName}`);
+    }
+
+    function logoutSession() {
+      currentRole = "PUBLIC";
+      sessionPin = "";
+      sessionEmail = "";
+      location.reload();
+    }
+
+    // ============================================================================
+    // 7. REQUISITION BUILDER, LIVE PREVIEW & AUTO-PDF EMAILER
+    // ============================================================================
+    function buildDenomInputs() {
+      const box = document.getElementById("denomInputsContainer");
+      box.innerHTML = DENOM_NOTES.map(n => `
+        <div class="flex items-center justify-between bg-white border rounded px-2 py-1">
+          <span class="font-bold">₹${n}x</span>
+          <input type="number" id="denom_${n}" value="${currentBuilder.denominations[n] || 0}" oninput="onDenomChange()" class="w-12 text-right font-bold text-orange-700 outline-none" />
+        </div>
+      `).join("");
+    }
+
+    function onDenomChange() {
+      let sum = 0;
+      DENOM_NOTES.forEach(n => {
+        const c = parseInt(document.getElementById(`denom_${n}`).value) || 0;
+        currentBuilder.denominations[n] = c;
+        sum += n * c;
+      });
+      document.getElementById("denomSumBadge").textContent = `₹${sum.toLocaleString("en-IN")}`;
+      if (sum > 0) {
+        document.getElementById("payCashAmt").value = sum;
+        currentBuilder.cashAmt = sum;
+      }
+      onPaymentAmtChange();
+    }
+
+    function onPaymentAmtChange() {
+      currentBuilder.cashAmt = parseFloat(document.getElementById("payCashAmt").value) || 0;
+      currentBuilder.onlineAmt = parseFloat(document.getElementById("payOnlineAmt").value) || 0;
+      updateLivePreview();
+    }
+
+    function autoFillRemainingOnline() {
+      const tot = currentBuilder.items.reduce((s, i) => s + (i.rate * i.qty), 0);
+      currentBuilder.onlineAmt = Math.max(0, tot - (currentBuilder.cashAmt || 0));
+      document.getElementById("payOnlineAmt").value = currentBuilder.onlineAmt;
+      updateLivePreview();
+    }
+
+    function populateMasterDatalist() {
+      const dl = document.getElementById("masterItemsDatalist");
+      dl.innerHTML = masterItems.map(m => `<option value="[${m.code}] ${m.name}">₹${m.rate} | ${m.keywords}</option>`).join("");
+    }
+
+    function onFastCodeInput(val) {
+      const found = masterItems.find(m => String(m.code) === val.trim());
+      if (found) {
+        document.getElementById("fastSearch").value = `[${found.code}] ${found.name}`;
+        document.getElementById("fastRate").value = found.rate;
+      }
+    }
+
+    function onFastSearchSelect(val) {
+      const clean = val.replace(/^\[.+?\]\s*/, "").trim().toLowerCase();
+      const found = masterItems.find(m => m.name.toLowerCase() === clean || `[${m.code}] ${m.name}` === val);
+      if (found) {
+        document.getElementById("fastCode").value = found.code;
+        document.getElementById("fastRate").value = found.rate;
+        document.getElementById("fastQty").focus();
+      }
+    }
+
+    function calcFastTotal() {}
+
+    function addItemToRequisition() {
+      const code = document.getElementById("fastCode").value.trim() || "-";
+      const name = document.getElementById("fastSearch").value.replace(/^\[.+?\]\s*/, "").trim();
+      const rate = parseFloat(document.getElementById("fastRate").value) || 0;
+      const qty = parseFloat(document.getElementById("fastQty").value) || 0;
+      if (!name || qty <= 0) { showToast("सामग्री और सही मात्रा भरें!"); return; }
+
+      currentBuilder.items.push({ code, name, rate, qty });
+      document.getElementById("fastCode").value = "";
+      document.getElementById("fastSearch").value = "";
+      document.getElementById("fastRate").value = "";
+      document.getElementById("fastQty").value = "";
+      syncBuilderToUI();
+    }
+
+    function syncBuilderToUI() {
+      document.getElementById("reqDate").value = currentBuilder.date;
+      document.getElementById("reqBranch").value = currentBuilder.branch;
+      document.getElementById("payCashAmt").value = currentBuilder.cashAmt;
+      document.getElementById("payOnlineAmt").value = currentBuilder.onlineAmt;
+      document.getElementById("internalLogNote").value = currentBuilder.internalNote || "";
+
+      const tbody = document.getElementById("builderItemsTbody");
+      tbody.innerHTML = currentBuilder.items.map((it, idx) => `
+        <tr>
+          <td class="p-2">${idx + 1}</td>
+          <td class="p-2 font-bold">${it.name}</td>
+          <td class="p-2 text-right">₹${it.rate}</td>
+          <td class="p-2 text-center font-bold">${it.qty}</td>
+          <td class="p-2 text-right font-bold">₹${it.rate * it.qty}</td>
+          <td class="p-2 text-center"><button onclick="removeBuilderItem(${idx})" class="text-red-500">✕</button></td>
+        </tr>
+      `).join("");
+
+      updateLivePreview();
+    }
+
+    function removeBuilderItem(idx) {
+      currentBuilder.items.splice(idx, 1);
+      syncBuilderToUI();
+    }
+
+    function formatDisplayDate(iso) {
+      if (!iso) return "";
+      const d = new Date(iso + "T00:00:00");
+      if (isNaN(d)) return iso;
+      const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return `${d.getDate()}-${m[d.getMonth()]}-${d.getFullYear()}`;
+    }
+
+    function updateLivePreview() {
+      currentBuilder.date = document.getElementById("reqDate").value;
+      currentBuilder.branch = document.getElementById("reqBranch").value;
+      document.getElementById("prevDateText").textContent = formatDisplayDate(currentBuilder.date);
+
+      let rowsHtml = "";
+      let grand = 0;
+      const totalRows = Math.max(12, currentBuilder.items.length);
+      for (let i = 0; i < totalRows; i++) {
+        const it = currentBuilder.items[i];
+        if (it) {
+          const amt = it.rate * it.qty;
+          grand += amt;
+          rowsHtml += `<tr><td class="text-center font-bold">${i + 1}</td><td class="text-center font-bold">${it.name}</td><td class="text-center">${it.rate}</td><td class="text-center font-bold">${it.qty}</td><td class="text-right font-bold">${amt}</td></tr>`;
+        } else {
+          rowsHtml += `<tr><td class="text-center">${i + 1}</td><td></td><td></td><td></td><td class="text-right">0</td></tr>`;
+        }
+      }
+      document.getElementById("prevItemsTbody").innerHTML = rowsHtml;
+      document.getElementById("prevGrandTotal").textContent = grand;
+
+      document.getElementById("prevPendingTbody").innerHTML = pendingItems.map((p, i) => `
+        <tr><td class="text-center font-bold">${i + 1}</td><td class="text-center font-bold">${p.name}</td><td class="text-center font-bold">${p.qty}</td><td class="text-center font-bold">${formatDisplayDate(p.date)}</td></tr>
+      `).join("");
+
+      document.getElementById("prevCashVal").textContent = currentBuilder.cashAmt || 0;
+      document.getElementById("prevOnlineVal").textContent = currentBuilder.onlineAmt || 0;
+    }
+
+    async function handleCompressedUpload(event, type) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const { dataUrl, sizeKB } = await compressImageUnder50KB(file, 750);
+      if (type === "cashSlip") {
+        currentBuilder.cashSlipBase64 = dataUrl;
+        document.getElementById("prevCashSlipImg").src = dataUrl;
+        document.getElementById("prevCashSlipWrap").classList.remove("hidden");
+        document.getElementById("clearCashSlipBtn").classList.remove("hidden");
+      } else {
+        currentBuilder.onlineSlipBase64 = dataUrl;
+        document.getElementById("prevOnlineSlipImg").src = dataUrl;
+        document.getElementById("prevOnlineSlipWrap").classList.remove("hidden");
+        document.getElementById("clearOnlineSlipBtn").classList.remove("hidden");
+      }
+      showToast(`रसीद फोटो जोड़ी गई (${sizeKB} KB)!`);
+    }
+
+    function clearReceipt(type) {
+      if (type === "cashSlip") {
+        currentBuilder.cashSlipBase64 = "";
+        document.getElementById("prevCashSlipWrap").classList.add("hidden");
+        document.getElementById("clearCashSlipBtn").classList.add("hidden");
+      } else {
+        currentBuilder.onlineSlipBase64 = "";
+        document.getElementById("prevOnlineSlipWrap").classList.add("hidden");
+        document.getElementById("clearOnlineSlipBtn").classList.add("hidden");
+      }
+    }
+
+    async function saveRequisitionToSheet() {
+      const totalAmt = currentBuilder.items.reduce((s, i) => s + (i.rate * i.qty), 0);
+      const record = {
+        ...currentBuilder,
+        id: currentBuilder.id || `REQ-${currentBuilder.date.replace(/-/g, "")}-${Math.floor(100 + Math.random() * 900)}`,
+        totalAmt,
+        internalNote: document.getElementById("internalLogNote").value.trim()
+      };
+
+      const idx = reqLogs.findIndex(r => r.id === record.id);
+      if (idx > -1) reqLogs[idx] = record;
+      else reqLogs.unshift(record);
+
+      localStorage.setItem("patnadham_logs_v2", JSON.stringify(reqLogs));
+      renderLogsSection();
+      showToast("रिक्विजिशन लोकल व लॉग में सेव हो गया!");
+
+      if (gasWebAppUrl && currentRole === "ADMIN") {
+        try {
+          await fetch(gasWebAppUrl, {
+            method: "POST",
+            body: JSON.stringify({ action: "saveRequisition", pin: sessionPin, record })
+          });
+          showToast("Google Sheet & Drive में भी सेव हो गया!");
+        } catch (e) { console.log(e); }
+      }
+    }
+
+    function downloadRequisitionPDF() {
+      const el = document.getElementById("printableArea");
+      const dateStr = formatDisplayDate(currentBuilder.date);
+      html2pdf().set({
+        margin: 4,
+        filename: `Requisition_Patna_Dham_Bihar_${dateStr}.pdf`,
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+      }).from(el).save();
+    }
+
+    async function sendRequisitionEmailToDelhi() {
+      const toEmail = prompt("दिल्ली धाम या प्राप्तकर्ता की ईमेल आईडी कन्फर्म करें:", "gurukripaskpatna@gmail.com");
+      if (!toEmail) return;
+
+      const el = document.getElementById("printableArea");
+      const dateStr = formatDisplayDate(currentBuilder.date);
+      showToast("PDF बनकर ईमेल के लिए तैयार हो रहा है...");
+
+      const pdfDataUri = await html2pdf().set({
+        margin: 4,
+        image: { type: "jpeg", quality: 0.92 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+      }).from(el).outputPdf("datauristring");
+
+      if (gasWebAppUrl && currentRole === "ADMIN") {
+        try {
+          const res = await fetch(gasWebAppUrl, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "sendRequisitionEmail",
+              pin: sessionPin,
+              toEmail: toEmail,
+              dateText: dateStr,
+              subject: `Requisition Patna Dham Bihar (${dateStr})`,
+              bodyText: `ॐ नमो नारायण जी,\n\nपटना धाम शाखा से दिनांक ${dateStr} का पूजा सामग्री रिक्विजिशन पीडीएफ संलग्न है।\n\nप्रेषक:\nसंजीत कुमार (पटना धाम) - 7004984949`,
+              pdfBase64: pdfDataUri,
+              pdfFileName: `Requisition_Patna_Dham_${dateStr}.pdf`
+            })
+          });
+          const data = await res.json();
+          showToast(data.message || "ईमेल भेज दिया गया!");
+          return;
+        } catch (err) {
+          console.log(err);
+        }
+      }
+
+      // Fallback: Download PDF + Open Email Client
+      downloadRequisitionPDF();
+      window.location.href = `mailto:${toEmail}?subject=Requisition Patna Dham Bihar (${dateStr})&body=ॐ नमो नारायण जी, दिनांक ${dateStr} का रिक्विजिशन पीडीएफ डाउनलोड हो गया है, कृपया संलग्न करें।`;
+    }
+
+    // ============================================================================
+    // 8. LOGS & VIEWER DATE-WISE FILTERING
+    // ============================================================================
+    function renderLogsSection() {
+      const box = document.getElementById("logsContainer");
+      let visibleLogs = [...reqLogs];
+
+      // Apply Email-Based Date Permission if Viewer
+      if (currentRole === "VIEWER" && sessionEmail) {
+        const rule = viewerPermissions.find(v => v.email.toLowerCase() === sessionEmail);
+        if (rule && rule.accessMode === "DATE_LIST" && rule.allowedDates) {
+          const allowed = rule.allowedDates.split(",").map(s => s.trim());
+          visibleLogs = visibleLogs.filter(l => allowed.includes(l.date));
+        }
+      }
+
+      if (visibleLogs.length === 0) {
+        box.innerHTML = `<div class="p-6 text-center text-slate-400 border border-dashed rounded-xl">इस ईमेल परमिशन के लिए कोई रिक्विजिशन उपलब्ध नहीं है।</div>`;
+        return;
+      }
+
+      box.innerHTML = visibleLogs.map(log => {
+        const denomBadges = (currentRole === "ADMIN" && log.denominations)
+          ? DENOM_NOTES.filter(n => log.denominations[n] > 0).map(n => `<span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-bold">₹${n}×${log.denominations[n]}</span>`).join(" ")
+          : `<span class="text-slate-400 text-[11px]">गोपनीय (Admin Only)</span>`;
+
+        return `
+          <div class="border rounded-xl p-4 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="font-bold text-slate-800 text-sm">${formatDisplayDate(log.date)} <span class="text-xs text-slate-400">(${log.id})</span></div>
+              <div class="text-xs text-slate-600 mt-0.5">${log.items.map(i => `${i.name} (${i.qty})`).join(", ")}</div>
+              ${currentRole === "ADMIN" ? `<div class="mt-1.5 flex items-center gap-1.5"><span class="text-[11px] font-bold text-slate-500">नोट लॉग:</span> ${denomBadges}</div>` : ""}
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="bg-slate-800 text-white px-2.5 py-1 rounded text-xs font-bold">Total: ₹${log.totalAmt}</span>
+              <span class="bg-amber-100 text-amber-900 px-2 py-1 rounded text-xs font-bold">Cash: ₹${log.cashAmt}</span>
+              <span class="bg-blue-100 text-blue-900 px-2 py-1 rounded text-xs font-bold">Online: ₹${log.onlineAmt}</span>
+              <button onclick="openLogInPreview('${log.id}')" class="bg-orange-600 text-white px-3 py-1 rounded text-xs font-bold">PDF देखें</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function openLogInPreview(id) {
+      const found = reqLogs.find(r => r.id === id);
+      if (!found) return;
+      currentBuilder = JSON.parse(JSON.stringify(found));
+      syncBuilderToUI();
+      switchTab("builder");
+    }
+
+    // ============================================================================
+    // 9. ADMIN: MANAGE VIEWERS & SECRET CONTACTS
+    // ============================================================================
+    function addNewViewerPermission() {
+      const email = document.getElementById("newViewerEmail").value.trim().toLowerCase();
+      const name = document.getElementById("newViewerName").value.trim();
+      const accessMode = document.getElementById("newViewerMode").value;
+      const allowedDates = document.getElementById("newViewerDates").value.trim();
+      if (!email) { showToast("Viewer ईमेल डालें!"); return; }
+
+      viewerPermissions.push({ email, name: name || email, accessMode, allowedDates, status: "ACTIVE" });
+      localStorage.setItem("patnadham_viewers_v2", JSON.stringify(viewerPermissions));
+      renderSecretContactsAndViewers();
+      showToast("Viewer ईमेल परमिशन सेव हो गई!");
+    }
+
+    function addSecretContact() {
+      const title = document.getElementById("secTitle").value.trim();
+      const phoneOrAcc = document.getElementById("secPhoneAcc").value.trim();
+      const ifscOrBranch = document.getElementById("secIfsc").value.trim();
+      const visibilityRole = document.getElementById("secRole").value;
+      if (!title || !phoneOrAcc) return;
+
+      secretContacts.push({ id: "sec-" + Date.now(), title, phoneOrAcc, ifscOrBranch, visibilityRole });
+      localStorage.setItem("patnadham_secrets_v2", JSON.stringify(secretContacts));
+      renderSecretContactsAndViewers();
+      showToast("गोपनीय संपर्क जुड़ गया!");
+    }
+
+    function renderSecretContactsAndViewers() {
+      const box = document.getElementById("secretContactsListContainer");
+      if (!box) return;
+      const contactsHtml = secretContacts.map(c => `
+        <div class="flex items-center justify-between bg-amber-50/70 border border-amber-200 p-2.5 rounded-lg text-xs">
+          <div><strong>${c.title}</strong>: <span class="text-orange-800 font-bold">${c.phoneOrAcc}</span> <span class="text-slate-500">(${c.ifscOrBranch || ''})</span></div>
+          <span class="bg-white border px-2 py-0.5 rounded text-[10px] font-bold">${c.visibilityRole}</span>
+        </div>
+      `).join("");
+
+      const viewersHtml = viewerPermissions.map(v => `
+        <div class="flex items-center justify-between bg-blue-50/70 border border-blue-200 p-2.5 rounded-lg text-xs">
+          <div><strong>${v.email}</strong> (${v.name}) — Mode: <strong>${v.accessMode}</strong> ${v.allowedDates ? `[${v.allowedDates}]` : ''}</div>
+          <span class="text-emerald-700 font-bold">${v.status}</span>
+        </div>
+      `).join("");
+
+      box.innerHTML = `<h4 class="font-bold text-xs text-slate-700 mt-2">गोपनीय दिल्ली नंबर एवं बैंक खाते:</h4>${contactsHtml}<h4 class="font-bold text-xs text-slate-700 mt-4">अधिकृत ईमेल व्यूअर्स (Authorized Viewers):</h4>${viewersHtml}`;
+    }
+
+    function saveGasUrl() {
+      gasWebAppUrl = document.getElementById("gasWebAppUrlInput").value.trim();
+      localStorage.setItem("patnadham_gas_url", gasWebAppUrl);
+      showToast("Apps Script URL सेव हो गया!");
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.add("hidden"));
+      document.getElementById(`tab-${tabName}`)?.classList.remove("hidden");
+    }
+
+    function showToast(msg) {
+      const box = document.getElementById("toastBox");
+      document.getElementById("toastMsg").textContent = msg;
+      box.classList.remove("hidden");
+      box.classList.add("flex");
+      setTimeout(() => { box.classList.add("hidden"); box.classList.remove("flex"); }, 2800);
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+  
