@@ -578,8 +578,8 @@
       const email = document.getElementById("authEmail").value.trim().toLowerCase();
       // Mathematical checksum so plain PIN is never visible in GitHub source
       const sig = pin.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 11), 0);
-      const isAdminPin = (pin.length === 4 && sig === 2831);
-      const isSubPin = (pin.length === 4 && sig === 2807);
+      const isAdminPin = (pin.length === 4 && sig === 2624);
+      const isSubPin = (pin.length === 4 && sig === 2636);
       const matchedEmailRule = dbViewerRules.find(r => r.email === email);
 
       if (pendingAuthTarget === "ADMIN" && isAdminPin) {
