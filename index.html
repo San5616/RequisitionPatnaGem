@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Patna Dham ERP - SanDeal Architecture (Public, Buyer, Sub-Admin, Admin)</title>
+  <title>Patna Dham Master ERP & Public E-Catalogue</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,6 +11,7 @@
 
   <style>
     body { font-family: 'Inter', 'Noto Sans Devanagari', sans-serif; background-color: #f8fafc; }
+    .dark body { background-color: #0f172a; color: #f1f5f9; }
     .a4-preview {
       width: 210mm; min-height: 297mm; background: #ffffff; color: #000000;
       margin: 0 auto; padding: 8mm 10mm; box-sizing: border-box;
@@ -21,283 +22,120 @@
     .req-table th, .req-table td { border: 1px solid #000; padding: 3px 6px; line-height: 1.25; }
     .req-table th { background-color: #f1f5f9; font-weight: 700; text-align: center; }
     .yellow-highlight { background-color: #ffff00 !important; font-weight: 700; }
-    @media print {
-      body * { visibility: hidden; }
-      #printableArea, #printableArea * { visibility: visible; }
-      #printableArea { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 5mm; border: none; box-shadow: none; }
-      .no-print { display: none !important; }
-    }
   </style>
 </head>
-<body class="text-slate-800">
+<body class="text-slate-800 pb-16 md:pb-0">
 
-  <!-- TOP HEADER & ROLE SWITCHER BAR -->
-  <header class="bg-gradient-to-r from-amber-800 via-orange-600 to-amber-800 text-white shadow-lg sticky top-0 z-50 no-print">
+  <!-- TOP HEADER -->
+  <header class="bg-gradient-to-r from-amber-800 via-orange-600 to-amber-800 text-white shadow-lg sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
         <div class="bg-white/20 p-2 rounded-xl"><i class="fa-solid fa-om text-2xl text-amber-200"></i></div>
         <div>
-          <h1 class="text-base md:text-lg font-bold">भगवान श्री लक्ष्मी नारायण धाम, पटना (बिहार)</h1>
-          <p class="text-[11px] text-amber-100" id="activeRoleSubtitle">मोड: Public E-Catalogue | हेल्पलाइन: 7004984949, 011-49945995</p>
+          <h1 class="text-sm md:text-lg font-bold">भगवान श्री लक्ष्मी नारायण धाम, पटना (बिहार)</h1>
+          <p class="text-[11px] text-amber-100" id="roleSubtitle">मोड: Public E-Catalogue | हेल्प: 7004984949</p>
         </div>
       </div>
-
-      <!-- 4-Role Navigation & Portal Switcher -->
-      <div class="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
-        <button onclick="switchPortalView('PUBLIC')" id="btnView-PUBLIC" class="px-3 py-2 rounded-lg bg-white text-orange-700 shadow-xs flex items-center gap-1">
-          <i class="fa-solid fa-store"></i> पब्लिक कैटलॉग
-        </button>
-        <button onclick="switchPortalView('BUYER')" id="btnView-BUYER" class="px-3 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white flex items-center gap-1">
-          <i class="fa-solid fa-bag-shopping"></i> बायर / संगत डैशबोर्ड
-        </button>
-        <button onclick="openAuthPrompt('SUBADMIN')" id="btnView-SUBADMIN" class="px-3 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white flex items-center gap-1">
-          <i class="fa-solid fa-user-shield"></i> सब-एडमिन (व्यूअर)
-        </button>
-        <button onclick="openAuthPrompt('ADMIN')" id="btnView-ADMIN" class="px-3 py-2 rounded-lg bg-amber-950 hover:bg-black text-amber-200 flex items-center gap-1 shadow">
-          <i class="fa-solid fa-crown"></i> सुपर एडमिन
-        </button>
+      <div class="flex items-center gap-2">
+        <button onclick="toggleDarkMode()" class="bg-white/20 px-3 py-1.5 rounded-lg text-xs font-bold" title="Dark / Light Mode">🌙</button>
+        <div class="hidden md:flex gap-1.5 text-xs font-semibold">
+          <button onclick="switchView('PUBLIC')" class="px-3 py-2 rounded-lg bg-white text-orange-700 shadow-xs">कैटलॉग</button>
+          <button onclick="switchView('BUYER')" class="px-3 py-2 rounded-lg bg-white/15">बायर बुकिंग</button>
+          <button onclick="openPinModal('SUBADMIN')" class="px-3 py-2 rounded-lg bg-white/15">सब-एडमिन</button>
+          <button onclick="openPinModal('ADMIN')" class="px-3 py-2 rounded-lg bg-amber-950 text-amber-200">सुपर एडमिन</button>
+        </div>
       </div>
     </div>
   </header>
 
+  <!-- MOBILE BOTTOM APP BAR -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 text-white z-50 flex justify-around p-2 text-xs border-t border-slate-700">
+    <button onclick="switchView('PUBLIC')" class="flex flex-col items-center"><i class="fa-solid fa-store text-base"></i><span>कैटलॉग</span></button>
+    <button onclick="switchView('BUYER')" class="flex flex-col items-center"><i class="fa-solid fa-bag-shopping text-base"></i><span>बुकिंग</span></button>
+    <button onclick="openPinModal('SUBADMIN')" class="flex flex-col items-center"><i class="fa-solid fa-user-shield text-base"></i><span>व्यूअर</span></button>
+    <button onclick="openPinModal('ADMIN')" class="flex flex-col items-center text-amber-400"><i class="fa-solid fa-crown text-base"></i><span>एडमिन</span></button>
+  </nav>
+
   <main class="max-w-7xl mx-auto px-3 md:px-4 py-5 space-y-6">
 
-    <!-- =====================================================================
-         1. PUBLIC VIEW: FULL 57+ ITEMS E-CATALOGUE & PUBLIC HELPLINE
-    ====================================================================== -->
-    <section id="portal-PUBLIC" class="portal-section space-y-4">
-      <!-- Public Helpline Banner -->
-      <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div class="font-bold text-amber-900 flex items-center gap-2">
-          <i class="fa-solid fa-headset text-orange-600 text-base"></i>
-          <span>पटना केंद्र हेल्पलाइन: <a href="tel:7004984949" onclick="logUserCallAction('PUBLIC', 'Call Patna 7004984949')" class="underline text-orange-700">7004984949</a>, <a href="tel:9631331126" onclick="logUserCallAction('PUBLIC', 'Call Patna 9631331126')" class="underline text-orange-700">9631331126</a> | दिल्ली धाम: <a href="tel:01149945995" onclick="logUserCallAction('PUBLIC', 'Call Delhi 011-49945995')" class="underline text-orange-700">011-49945995</a></span>
-        </div>
-        <span class="text-slate-600 font-medium">पता: नारायण एक्सोटिका, आशियाना-दीघा रोड, पटना - 800024</span>
+    <!-- 1. PUBLIC VIEW -->
+    <section id="view-PUBLIC" class="view-panel space-y-4">
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs font-bold text-amber-900 flex justify-between">
+        <span>हेल्पलाइन: 7004984949, 9631331126 | दिल्ली: 011-49945995</span>
+        <span>आशियाना-दीघा रोड, पटना - 800024</span>
       </div>
-
-      <!-- Search & Filter Bar -->
-      <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 flex flex-col md:flex-row items-center justify-between gap-3">
-        <div class="relative w-full md:w-96">
-          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400"></i>
-          <input type="text" id="pubSearch" oninput="renderCatalogue()" placeholder="हिंदी या English में खोजें (जैसे: aasan, आसन, धूनी, 1)..." class="w-full pl-9 pr-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-orange-500 outline-none" />
-        </div>
-        <div class="flex flex-wrap gap-1.5 text-xs font-semibold w-full md:w-auto">
-          <button onclick="setCatFilter('ALL')" class="px-3 py-1.5 rounded-lg bg-orange-600 text-white">सभी (57)</button>
-          <button onclick="setCatFilter('पूजा सामग्री')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200">पूजा सामग्री</button>
-          <button onclick="setCatFilter('हवन सामग्री')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200">हवन सामग्री</button>
-          <button onclick="setCatFilter('औषधि')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200">औषधि</button>
-          <button onclick="setCatFilter('मूर्ति का विवरण')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200">मूर्तियाँ</button>
-          <button onclick="setCatFilter('पत्रिका/पुस्तक')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200">पुस्तकें</button>
-        </div>
+      <div class="bg-white rounded-2xl border p-4 flex gap-3">
+        <input type="text" id="pubSearch" oninput="renderCatalogue()" placeholder="सामग्री खोजें (जैसे: aasan, आसन, धूनी)..." class="w-full border rounded-xl px-3 py-2 text-sm outline-none" />
       </div>
-
-      <!-- Product Grid -->
       <div id="catalogueGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5"></div>
     </section>
 
-    <!-- =====================================================================
-         2. BUYER / SANGAT DASHBOARD (Book Items, View Orders & Call Logs)
-    ====================================================================== -->
-    <section id="portal-BUYER" class="portal-section hidden space-y-5">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <!-- Buyer Booking Form -->
-        <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-4 space-y-3 shadow-xs">
-          <h2 class="font-bold text-slate-800 text-base border-b pb-2 flex items-center gap-2">
-            <i class="fa-solid fa-cart-Flatbed text-orange-600"></i> संगत / बायर सामग्री बुकिंग (Prepaid / Order)
-          </h2>
-          <div class="grid grid-cols-2 gap-2.5 text-xs">
-            <div>
-              <label class="font-bold block mb-1">आपका नाम *</label>
-              <input type="text" id="buyerName" placeholder="नाम लिखें" class="w-full border rounded-lg px-2.5 py-2" />
-            </div>
-            <div>
-              <label class="font-bold block mb-1">मोबाइल नंबर *</label>
-              <input type="tel" id="buyerPhone" placeholder="10 अंकों का नंबर" oninput="renderBuyerOrders()" class="w-full border rounded-lg px-2.5 py-2 font-bold" />
-            </div>
-          </div>
-          <div class="grid grid-cols-12 gap-2 items-end bg-orange-50 p-2.5 rounded-xl border border-orange-100 text-xs">
-            <div class="col-span-7">
-              <label class="font-bold block mb-1">सामग्री चुनें</label>
-              <select id="buyerItemSelect" class="w-full border rounded-lg px-2 py-2 bg-white"></select>
-            </div>
-            <div class="col-span-3">
-              <label class="font-bold block mb-1">मात्रा (Qty)</label>
-              <input type="number" id="buyerItemQty" value="1" min="1" class="w-full border rounded-lg px-2 py-2 text-center font-bold bg-white" />
-            </div>
-            <div class="col-span-2">
-              <button onclick="addBuyerCartItem()" class="w-full bg-orange-600 text-white font-bold py-2 rounded-lg">+Add</button>
-            </div>
-          </div>
-
-          <div id="buyerCartBox" class="space-y-1.5 text-xs max-h-44 overflow-y-auto"></div>
-
-          <div class="pt-2 border-t flex items-center justify-between">
-            <div class="text-sm font-bold">कुल सेवा राशि: <span id="buyerTotalSpan" class="text-orange-700">₹0</span></div>
-            <button onclick="submitBuyerOrder()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow">
-              <i class="fa-solid fa-check-circle mr-1"></i> बुकिंग सबमिट करें
-            </button>
-          </div>
+    <!-- 2. BUYER VIEW -->
+    <section id="view-BUYER" class="view-panel hidden space-y-4">
+      <div class="bg-white rounded-2xl border p-5 max-w-xl mx-auto space-y-3">
+        <h2 class="font-bold text-base border-b pb-2">संगत / बायर सामग्री बुकिंग</h2>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <input type="text" id="bName" placeholder="आपका नाम" class="border rounded px-2.5 py-2" />
+          <input type="tel" id="bPhone" placeholder="मोबाइल नंबर" class="border rounded px-2.5 py-2 font-bold" />
         </div>
-
-        <!-- Buyer Order History & Direct Call Action -->
-        <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-4 space-y-3 shadow-xs">
-          <div class="flex items-center justify-between border-b pb-2">
-            <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
-              <i class="fa-solid fa-clock-rotate-left text-orange-600"></i> मेरी बुकिंग एवं कॉल सहायता
-            </h2>
-            <a href="tel:7004984949" onclick="logUserCallAction('BUYER', 'Buyer Called Patna Center')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1">
-              <i class="fa-solid fa-phone"></i> पटना केंद्र कॉल करें
-            </a>
-          </div>
-          <div id="buyerHistoryList" class="space-y-2.5 text-xs"></div>
+        <div class="flex gap-2 text-xs">
+          <select id="bItemSelect" class="flex-1 border rounded p-2"></select>
+          <input type="number" id="bQty" value="1" min="1" class="w-16 border rounded text-center font-bold" />
+          <button onclick="addBuyerItem()" class="bg-orange-600 text-white px-4 py-2 font-bold rounded">जोड़ें</button>
         </div>
+        <div id="bCartBox" class="space-y-1 text-xs"></div>
+        <button onclick="submitBuyerOrder()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl shadow">ऑर्डर सबमिट करें</button>
       </div>
     </section>
 
-    <!-- =====================================================================
-         3. SUB-ADMIN / VIEWER DASHBOARD (View Requisitions, Dispatch, Contacts)
-    ====================================================================== -->
-    <section id="portal-SUBADMIN" class="portal-section hidden space-y-5">
-      <div class="bg-indigo-900 text-white rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-user-shield"></i> सब-एडमिन / दिल्ली धाम व्यूअर डैशबोर्ड</h2>
-          <p class="text-xs text-indigo-200" id="subAdminAccessInfo">आप पटना धाम के रिक्विजिशन, बकाया सामान और बायर बुकिंग देख व अपडेट कर सकते हैं।</p>
-        </div>
-        <div class="flex items-center gap-2 text-xs">
-          <input type="date" id="subAdminDateFilter" onchange="renderSubAdminDashboard()" class="text-slate-900 rounded px-2.5 py-1.5 font-bold" />
-          <button onclick="document.getElementById('subAdminDateFilter').value='';renderSubAdminDashboard();" class="bg-white/20 px-3 py-1.5 rounded">Show Allowed</button>
-        </div>
+    <!-- 3. SUBADMIN VIEW -->
+    <section id="view-SUBADMIN" class="view-panel hidden space-y-4">
+      <div class="bg-indigo-900 text-white rounded-2xl p-4 flex justify-between items-center text-xs">
+        <div><h2 class="font-bold text-base">सब-एडमिन व्यूअर डैशबोर्ड</h2><p class="text-indigo-200">आप अधिकृत रिक्विजिशन देख सकते हैं।</p></div>
+        <input type="date" id="subDateFilter" onchange="renderSubAdmin()" class="text-slate-900 rounded px-2 py-1 font-bold" />
       </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <div class="lg:col-span-8 bg-white rounded-2xl border p-4 space-y-3">
-          <h3 class="font-bold text-sm border-b pb-2 text-slate-800">📄 पटना धाम रिक्विजिशन लॉग्स (Date-wise Requisitions)</h3>
-          <div id="subAdminReqList" class="space-y-2.5 text-xs"></div>
-        </div>
-        <div class="lg:col-span-4 space-y-4">
-          <div class="bg-white rounded-2xl border p-4 space-y-2">
-            <h3 class="font-bold text-sm border-b pb-2 text-slate-800">📞 धाम ऑफिस एवं बैंक विवरण</h3>
-            <div id="subAdminSecretContacts" class="space-y-2 text-xs"></div>
-          </div>
-          <div class="bg-white rounded-2xl border p-4 space-y-2">
-            <h3 class="font-bold text-sm border-b pb-2 text-slate-800">🛍️ बायर / संगत ऑर्डर्स</h3>
-            <div id="subAdminBuyerList" class="space-y-2 text-xs max-h-60 overflow-y-auto"></div>
-          </div>
-        </div>
-      </div>
+      <div id="subReqList" class="space-y-2 text-xs"></div>
     </section>
 
-    <!-- =====================================================================
-         4. SUPER ADMIN DASHBOARD (Full Requisition Builder, Cash Logs, All User Call Logs)
-    ====================================================================== -->
-    <section id="portal-ADMIN" class="portal-section hidden space-y-5">
-      <!-- Admin Sub-Navigation Bar -->
-      <div class="bg-white rounded-xl border border-slate-200 p-2 flex flex-wrap gap-2 text-xs font-bold no-print">
-        <button onclick="switchAdminSubTab('reqBuilder')" class="adm-tab bg-orange-600 text-white px-3.5 py-2 rounded-lg"><i class="fa-solid fa-file-invoice mr-1"></i>1. नया रिक्विजिशन & PDF</button>
-        <button onclick="switchAdminSubTab('cashLogs')" class="adm-tab bg-slate-100 text-slate-700 px-3.5 py-2 rounded-lg"><i class="fa-solid fa-vault mr-1"></i>2. तारीख-वार Cash & Note Logs</button>
-        <button onclick="switchAdminSubTab('allCallLogs')" class="adm-tab bg-slate-100 text-slate-700 px-3.5 py-2 rounded-lg"><i class="fa-solid fa-phone-volume mr-1"></i>3. Universal Call & Activity Logs (Buyer/SubAdmin)</button>
-        <button onclick="switchAdminSubTab('accessControl')" class="adm-tab bg-slate-100 text-slate-700 px-3.5 py-2 rounded-lg"><i class="fa-solid fa-key mr-1"></i>4. व्यूअर परमिशन & गोपनीय नंबर</button>
-      </div>
-
-      <!-- ADMIN SUB-TAB 1: REQUISITION BUILDER & A4 PDF -->
-      <div id="admSub-reqBuilder" class="adm-subpanel grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div class="lg:col-span-5 space-y-4 no-print">
-          <div class="bg-white rounded-xl border p-4 space-y-3">
+    <!-- 4. ADMIN VIEW (Builder + Quick Qty Buttons + A4 PDF) -->
+    <section id="view-ADMIN" class="view-panel hidden space-y-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div class="lg:col-span-5 space-y-4">
+          <div class="bg-white rounded-xl border p-4 space-y-3 text-xs">
             <div class="flex justify-between items-center border-b pb-2">
-              <h3 class="font-bold text-sm"><i class="fa-solid fa-bolt text-orange-600 mr-1"></i>1. तारीख एवं तीव्र आइटम एंट्री</h3>
-              <button onclick="load02NovDemo()" class="text-[11px] bg-orange-50 text-orange-700 border border-orange-200 px-2 py-0.5 rounded font-bold">02-Nov लोड करें</button>
+              <h3 class="font-bold text-sm">नया रिक्विजिशन & वॉइस बिलिंग</h3>
+              <button onclick="startVoiceBilling()" class="bg-orange-100 text-orange-800 px-2 py-1 rounded font-bold">🎙️ Voice Bill</button>
             </div>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-              <div><label class="font-bold block mb-1">तारीख</label><input type="date" id="admReqDate" onchange="updateA4Preview()" class="w-full border rounded px-2 py-1.5 font-bold" /></div>
-              <div><label class="font-bold block mb-1">शाखा</label><input type="text" id="admReqBranch" value="Patna Dham, Bihar" oninput="updateA4Preview()" class="w-full border rounded px-2 py-1.5" /></div>
-            </div>
-
-            <!-- Code & Name Fast Input -->
-            <div class="grid grid-cols-12 gap-2 items-end bg-orange-50/70 p-2.5 rounded-xl border border-orange-200 text-xs">
-              <div class="col-span-3">
-                <label class="font-bold block mb-1">Code</label>
-                <input type="text" id="admFastCode" placeholder="1-57" oninput="onAdmCodeInput(this.value)" class="w-full border rounded px-2 py-1.5 font-bold text-orange-700 bg-white" />
-              </div>
-              <div class="col-span-9">
-                <label class="font-bold block mb-1">सामग्री खोजें (Dropdown)</label>
-                <input type="text" id="admFastSearch" list="admMasterDatalist" placeholder="नाम या कोड लिखें..." onchange="onAdmSearchChange(this.value)" class="w-full border rounded px-2 py-1.5 bg-white" />
-                <datalist id="admMasterDatalist"></datalist>
-              </div>
-              <div class="col-span-4 mt-1">
-                <label class="font-bold block mb-1">Rate (₹)</label>
-                <input type="number" id="admFastRate" class="w-full border rounded px-2 py-1 bg-white" />
-              </div>
-              <div class="col-span-4 mt-1">
-                <label class="font-bold block mb-1">Qty</label>
-                <input type="number" id="admFastQty" onkeydown="if(event.key==='Enter'){admAddItem();}" class="w-full border border-orange-400 rounded px-2 py-1 font-bold bg-white" />
-              </div>
-              <div class="col-span-4 mt-1">
-                <button onclick="admAddItem()" class="w-full bg-orange-600 text-white font-bold py-1.5 rounded">+ जोड़ें</button>
-              </div>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="date" id="admDate" onchange="updateA4()" class="border rounded px-2.5 py-1.5 font-bold" />
+              <input type="text" id="admBranch" value="Patna Dham, Bihar" oninput="updateA4()" class="border rounded px-2.5 py-1.5" />
             </div>
 
-            <div class="max-h-48 overflow-y-auto border rounded-lg">
+            <!-- Quick Tap Qty Buttons (+1, +5, +10) -->
+            <div class="bg-orange-50 p-3 rounded-xl border border-orange-200 space-y-2">
+              <span class="font-bold text-orange-900 block">⚡ Quick-Tap सामग्री जोड़ें:</span>
+              <div class="flex flex-wrap gap-1.5" id="quickTapChips"></div>
+            </div>
+
+            <div class="max-h-48 overflow-y-auto border rounded">
               <table class="w-full text-xs text-left">
-                <thead class="bg-slate-100 sticky top-0"><tr><th class="p-1.5">#</th><th class="p-1.5">सामग्री</th><th class="p-1.5 text-right">Rate</th><th class="p-1.5 text-center">Qty</th><th class="p-1.5 text-right">Total</th><th class="p-1.5"></th></tr></thead>
-                <tbody id="admBuilderTbody" class="divide-y"></tbody>
+                <thead class="bg-slate-100 sticky top-0"><tr><th class="p-1">#</th><th class="p-1">सामग्री</th><th class="p-1 text-right">Rate</th><th class="p-1 text-center">Qty</th><th class="p-1 text-right">Total</th><th class="p-1"></th></tr></thead>
+                <tbody id="admTbody" class="divide-y"></tbody>
               </table>
             </div>
-          </div>
-
-          <!-- Payment, Note Denomination (Internal Log) & Receipts -->
-          <div class="bg-white rounded-xl border p-4 space-y-3 text-xs">
-            <h3 class="font-bold text-sm border-b pb-2"><i class="fa-solid fa-indian-rupee-sign text-emerald-600 mr-1"></i>2. पेमेंट स्प्लिट, नोट लॉग & रसीद (<50KB)</h3>
-            <div class="grid grid-cols-2 gap-2.5">
-              <div class="bg-amber-50 p-2 rounded border border-amber-200">
-                <label class="font-bold block mb-1">Cash Deposit (₹)</label>
-                <input type="number" id="admCashAmt" oninput="updateA4Preview()" class="w-full border rounded px-2 py-1 font-bold text-sm bg-white" />
-              </div>
-              <div class="bg-blue-50 p-2 rounded border border-blue-200">
-                <div class="flex justify-between mb-1"><label class="font-bold">Online / UPI (₹)</label><button onclick="admAutoOnline()" class="text-[10px] text-blue-600 underline font-bold">Auto शेष</button></div>
-                <input type="number" id="admOnlineAmt" oninput="updateA4Preview()" class="w-full border rounded px-2 py-1 font-bold text-sm bg-white" />
-              </div>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+              <input type="number" id="admCash" placeholder="Cash Deposit" oninput="updateA4()" class="border rounded px-2.5 py-1.5 font-bold" />
+              <input type="number" id="admOnline" placeholder="Online / GPay" oninput="updateA4()" class="border rounded px-2.5 py-1.5 font-bold" />
             </div>
-
-            <!-- Internal Note Denominations (Saved in Call Log, Never Printed) -->
-            <details class="bg-slate-50 p-2 rounded border">
-              <summary class="font-bold cursor-pointer flex justify-between">
-                <span><i class="fa-solid fa-money-bill-wave text-emerald-600 mr-1"></i>नोटों का विवरण (सिर्फ लॉग में सेव होगा, प्रिंट में नहीं)</span>
-                <span id="admDenomTotal" class="text-emerald-700 font-bold">₹0</span>
-              </summary>
-              <div class="grid grid-cols-3 gap-1.5 mt-2" id="admDenomGrid"></div>
-            </details>
-
-            <!-- Receipt Uploads -->
-            <div class="grid grid-cols-2 gap-2 pt-1">
-              <label class="border border-dashed p-2 rounded text-center bg-slate-50 cursor-pointer">
-                <span class="font-bold block">1. Cash Slip फोटो</span>
-                <input type="file" accept="image/*" onchange="admUploadSlip(event, 'cash')" class="hidden" />
-                <span class="text-[10px] text-orange-600 underline">चुनें (<50KB Auto)</span>
-              </label>
-              <label class="border border-dashed p-2 rounded text-center bg-slate-50 cursor-pointer">
-                <span class="font-bold block">2. Online GPay फोटो</span>
-                <input type="file" accept="image/*" onchange="admUploadSlip(event, 'online')" class="hidden" />
-                <span class="text-[10px] text-blue-600 underline">चुनें (<50KB Auto)</span>
-              </label>
-            </div>
-            <input type="text" id="admInternalNote" placeholder="UTR / बैंक नोट्स (इंटरनल लॉग के लिए)" class="w-full border rounded px-2.5 py-1.5" />
-
-            <!-- Final Submit, PDF & Direct Email Buttons -->
             <div class="grid grid-cols-3 gap-2 pt-2">
-              <button onclick="admSaveRequisition()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow flex items-center justify-center gap-1">
-                <i class="fa-solid fa-floppy-disk"></i> सेव लॉग
-              </button>
-              <button onclick="admDownloadPDF()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded-xl shadow flex items-center justify-center gap-1">
-                <i class="fa-solid fa-file-pdf"></i> PDF सेव
-              </button>
-              <button onclick="admSendDirectEmail()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl shadow flex items-center justify-center gap-1">
-                <i class="fa-solid fa-envelope"></i> ईमेल भेजें
-              </button>
+              <button onclick="saveAdminReq()" class="bg-emerald-600 text-white font-bold py-2.5 rounded-lg">सेव लॉग</button>
+              <button onclick="downloadPdf()" class="bg-orange-600 text-white font-bold py-2.5 rounded-lg">PDF</button>
+              <button onclick="sendEmailToDelhi()" class="bg-blue-600 text-white font-bold py-2.5 rounded-lg">ईमेल</button>
             </div>
           </div>
         </div>
 
-        <!-- Right: Live A4 Printable Sheet -->
+        <!-- A4 Preview -->
         <div class="lg:col-span-7 overflow-x-auto">
           <div id="printableArea" class="a4-preview">
             <div class="grid grid-cols-12 items-start mb-1 text-xs">
@@ -307,93 +145,36 @@
                 <div class="font-bold text-sm">भगवान श्री लक्ष्मी नारायण धाम, पटना शाखा (बिहार)</div>
                 <div class="font-bold text-xs underline mt-0.5">Pooja Samagri Details</div>
               </div>
-              <div class="col-span-3 text-right font-bold text-xs">Date :- <span id="a4DateText" class="underline">02-Nov-2026</span></div>
+              <div class="col-span-3 text-right font-bold text-xs">Date :- <span id="a4Date" class="underline">02-Nov-2026</span></div>
             </div>
-
             <table class="req-table mt-1">
               <thead><tr><th style="width:8%">S. No.</th><th style="width:52%">Name of Item</th><th style="width:13%">Rate</th><th style="width:11%">Qty</th><th style="width:16%">Remarks</th></tr></thead>
-              <tbody id="a4ItemsTbody"></tbody>
-              <tfoot><tr class="font-bold"><td colspan="3" class="text-right pr-3">Total :-</td><td></td><td id="a4GrandTotal" class="text-right">0</td></tr></tfoot>
+              <tbody id="a4Tbody"></tbody>
+              <tfoot><tr class="font-bold"><td colspan="3" class="text-right pr-3">Total :-</td><td></td><td id="a4Total" class="text-right">0</td></tr></tfoot>
             </table>
-
             <div class="grid grid-cols-12 gap-2 mt-2 items-start">
               <div class="col-span-7">
                 <table class="req-table text-xs">
                   <thead><tr><th style="width:12%"></th><th class="yellow-highlight" style="width:48%">Pending Items</th><th style="width:15%">Qty</th><th style="width:25%">Date</th></tr></thead>
-                  <tbody id="a4PendingTbody"><tr><td class="text-center font-bold">1</td><td class="text-center font-bold">हवन कुंड</td><td class="text-center font-bold">30</td><td class="text-center font-bold">12-Oct-2026</td></tr></tbody>
+                  <tbody><tr><td class="text-center font-bold">1</td><td class="text-center font-bold">हवन कुंड</td><td class="text-center font-bold">30</td><td class="text-center font-bold">12-Oct-2026</td></tr></tbody>
                 </table>
               </div>
               <div class="col-span-5">
                 <table class="req-table text-xs">
                   <tbody>
-                    <tr><td class="yellow-highlight text-right font-bold">Cash -</td><td class="yellow-highlight text-right font-bold" id="a4CashVal">0</td></tr>
-                    <tr><td class="yellow-highlight text-right font-bold">Online -</td><td class="yellow-highlight text-right font-bold" id="a4OnlineVal">0</td></tr>
+                    <tr><td class="yellow-highlight text-right font-bold">Cash -</td><td class="yellow-highlight text-right font-bold" id="a4Cash">0</td></tr>
+                    <tr><td class="yellow-highlight text-right font-bold">Online -</td><td class="yellow-highlight text-right font-bold" id="a4Online">0</td></tr>
                   </tbody>
                 </table>
               </div>
             </div>
-
-            <div class="grid grid-cols-12 gap-2 my-2 items-center">
-              <div id="a4OnlineImgBox" class="col-span-5 hidden border rounded p-1 text-center"><img id="a4OnlineImg" class="max-h-44 mx-auto" /></div>
-              <div id="a4CashImgBox" class="col-span-7 hidden border rounded p-1 text-center"><img id="a4CashImg" class="max-h-44 mx-auto" /></div>
+            <div class="mt-3 pt-1 border-t border-black text-xs flex justify-between items-center">
+              <div>
+                <div class="font-bold text-sm mb-1">पटना धाम (बिहार)</div>
+                <div class="text-[10px] font-semibold">Bhagwan Sree Lakshmi Narayan Dham, Patna - 800024 | Mob: 7004984949</div>
+              </div>
+              <img id="a4Qr" src="https://api.qrserver.com/v1/create-qr-code/?size=65x65&data=PatnaDham_Verified" width="60" height="60" />
             </div>
-
-            <div class="mt-3 pt-1 border-t border-black text-xs">
-              <div class="text-right font-bold text-sm mb-1">पटना धाम (बिहार)</div>
-              <table class="req-table text-[11px]">
-                <tbody>
-                  <tr>
-                    <td style="width:12%" class="font-bold text-center">Address</td>
-                    <td style="width:63%" class="text-center font-semibold">Bhagwan Sree Lakshmi Narayan Dham, GANPATI SALES, at NARAYAN EXOTICA, OPP SUNRISE HOSPITAL. 250 m SOUTH FROM GHURDAUR MORE, ASHIYANA DIGHA MAIN ROAD. PO-KESHRI NAGAR, PATNA, BIHAR - 800024 | Mobile: 9631331126, 7004984949</td>
-                    <td style="width:25%" class="text-center font-bold">Sender:-<br/>Sanjeet Kumar<br/>7004984949<br/>8271066951</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div class="mt-1 font-bold text-xs">E-mail:- gurukripaskpatna@gmail.com</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ADMIN SUB-TAB 2: DATE-WISE CASH & NOTE DENOMINATION CALL LOGS -->
-      <div id="admSub-cashLogs" class="adm-subpanel hidden bg-white rounded-2xl border p-5 space-y-3">
-        <h3 class="font-bold text-base text-slate-800"><i class="fa-solid fa-vault text-emerald-600 mr-1"></i>तारीख-वार रिक्विजिशन एवं इंटरनल नोट गिनती लॉग्स (Admin Call-Log History)</h3>
-        <div id="admCashLogsContainer" class="space-y-2.5 text-xs"></div>
-      </div>
-
-      <!-- ADMIN SUB-TAB 3: UNIVERSAL CALL & ACTIVITY LOGS (Buyer + Sub-Admin + Public Actions) -->
-      <div id="admSub-allCallLogs" class="adm-subpanel hidden bg-white rounded-2xl border p-5 space-y-3">
-        <div class="flex justify-between items-center border-b pb-2">
-          <div>
-            <h3 class="font-bold text-base text-slate-800"><i class="fa-solid fa-tower-broadcast text-orange-600 mr-1"></i>Universal Call & Activity Logs (सभी यूजर्स की गतिविधि)</h3>
-            <p class="text-xs text-slate-500">किसी भी बायर (Buyer), सब-एडमिन (Viewer) या पब्लिक यूजर द्वारा किया गया कॉल, बुकिंग या लॉगिन यहाँ तुरंत रिकॉर्ड होता है।</p>
-          </div>
-          <button onclick="renderUniversalCallLogs()" class="bg-slate-100 px-3 py-1.5 rounded text-xs font-bold">Refresh</button>
-        </div>
-        <div id="universalCallLogsBox" class="space-y-2 text-xs"></div>
-      </div>
-
-      <!-- ADMIN SUB-TAB 4: VIEWER DATE PERMISSIONS & SECRET CONTACTS -->
-      <div id="admSub-accessControl" class="adm-subpanel hidden bg-white rounded-2xl border p-5 space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <div class="border rounded-xl p-4 bg-slate-50 space-y-2.5">
-            <h4 class="font-bold text-sm text-slate-800">🔒 सब-एडमिन / व्यूअर ईमेल परमिशन (All या Date-wise)</h4>
-            <input type="email" id="vEmail" placeholder="Viewer Email (जैसे: delhi@gmail.com)" class="w-full border rounded px-2.5 py-1.5 bg-white" />
-            <select id="vMode" class="w-full border rounded px-2.5 py-1.5 bg-white">
-              <option value="ALL">सभी तारीखों के रिक्विजिशन देखने दें (ALL)</option>
-              <option value="DATE_LIST">सिर्फ चुनिंदा तारीखें (Particular Dates)</option>
-            </select>
-            <input type="text" id="vDates" placeholder="तारीखें लिखें (जैसे: 2026-11-02, 2026-10-12)" class="w-full border rounded px-2.5 py-1.5 bg-white" />
-            <button onclick="admAddViewerRule()" class="w-full bg-slate-900 text-white font-bold py-2 rounded">परमिशन सेव करें</button>
-            <div id="admViewerRulesList" class="space-y-1.5 pt-2"></div>
-          </div>
-
-          <div class="border rounded-xl p-4 bg-slate-50 space-y-2.5">
-            <h4 class="font-bold text-sm text-slate-800">📞 दिल्ली के गोपनीय नंबर & बैंक खाते</h4>
-            <input type="text" id="scName" placeholder="नाम / ऑफिस / बैंक" class="w-full border rounded px-2.5 py-1.5 bg-white" />
-            <input type="text" id="scNum" placeholder="नंबर या खाता संख्या" class="w-full border rounded px-2.5 py-1.5 bg-white" />
-            <button onclick="admAddSecretContact()" class="w-full bg-orange-600 text-white font-bold py-2 rounded">गोपनीय सूची में जोड़ें</button>
-            <div id="admSecretList" class="space-y-1.5 pt-2"></div>
           </div>
         </div>
       </div>
@@ -401,510 +182,187 @@
 
   </main>
 
-  <!-- AUTHENTICATION MODAL (Zero-Exposure PIN / Email) -->
-  <div id="authModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4 no-print">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-3 text-center shadow-2xl">
-      <h3 class="font-bold text-base text-slate-800" id="authModalTitle">सुरक्षित लॉगिन</h3>
-      <input type="email" id="authEmail" placeholder="ईमेल आईडी (Sub-Admin/Viewer के लिए)" class="w-full border rounded-xl px-3 py-2 text-xs" />
-      <input type="password" id="authPin" placeholder="सिक्योर PIN दर्ज करें" onkeydown="if(event.key==='Enter'){verifyPortalAuth();}" class="w-full border rounded-xl px-3 py-2 text-sm font-bold text-center tracking-widest" />
-      <div class="flex gap-2 pt-1">
-        <button onclick="closeAuthModal()" class="flex-1 bg-slate-100 py-2 rounded-xl text-xs font-bold">रद्द करें</button>
-        <button onclick="verifyPortalAuth()" class="flex-1 bg-orange-600 text-white py-2 rounded-xl text-xs font-bold">प्रवेश करें</button>
+  <!-- PIN MODAL -->
+  <div id="pinModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-5 text-center space-y-3">
+      <h3 class="font-bold text-slate-800" id="pinTitle">सुरक्षित प्रवेश</h3>
+      <input type="password" id="pinInput" placeholder="PIN दर्ज करें" onkeydown="if(event.key==='Enter'){verifyPin();}" class="w-full border rounded-xl px-3 py-2 text-center font-bold tracking-widest text-lg" />
+      <div class="flex gap-2">
+        <button onclick="document.getElementById('pinModal').classList.add('hidden')" class="flex-1 bg-slate-100 py-2 rounded font-bold text-xs">रद्द</button>
+        <button onclick="verifyPin()" class="flex-1 bg-orange-600 text-white py-2 rounded font-bold text-xs">लॉगिन</button>
       </div>
     </div>
   </div>
 
   <script>
-    // =========================================================================
-    // IN-BUILT CONFIGURATION (वेबसाइट के अंदर अलग से URL पेस्ट करने की जरूरत नहीं)
-    // =========================================================================
-    const APP_CONFIG = {
-      // जब आप Google Apps Script डिप्लॉय करें, तो उसका URL बस एक बार यहाँ कोट्स के बीच डाल दें:
-      GAS_WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxLqi2OBtjainqIpUD5LFWt7b7uxOnQj81spHSvxPULOa6NB_kN5kYNcuMPBZg7-Ab_Ig/exec",
-      DEFAULT_RECEIVER_EMAIL: "gurukripaskpatna@gmail.com",
-      BRANCH_NAME: "Patna Dham, Bihar"
-    };
-
-    // =========================================================================
-    // COMPLETE 57 MASTER ITEMS FROM YOUR EXCEL (Sheet3 + 02-Nov PDF)
-    // =========================================================================
+    const APP_CONFIG = { GAS_WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxLqi2OBtjainqIpUD5LFWt7b7uxOnQj81spHSvxPULOa6NB_kN5kYNcuMPBZg7-Ab_Ig/exec" };
     const MASTER_ITEMS = [
-      { code: "1", name: "आसन", keywords: "aasan mat", rate: 100, category: "पूजा सामग्री" },
-      { code: "2", name: "रीयाल", keywords: "riyal stand", rate: 70, category: "पूजा सामग्री" },
-      { code: "3", name: "गोमुखी", keywords: "gomukhi bag", rate: 40, category: "पूजा सामग्री" },
-      { code: "4", name: "माला ( छोटा )", keywords: "mala chota", rate: 30, category: "पूजा सामग्री" },
-      { code: "5", name: "माला ( बड़ा )", keywords: "mala bada", rate: 100, category: "पूजा सामग्री" },
-      { code: "6", name: "चन्दन टीका", keywords: "chandan tika", rate: 50, category: "पूजा सामग्री" },
-      { code: "7", name: "गाऊन ( पीला )", keywords: "gown peela yellow", rate: 250, category: "पूजा सामग्री" },
-      { code: "8", name: "गाऊन ( सफेद )", keywords: "gown safed white", rate: 250, category: "पूजा सामग्री" },
-      { code: "9", name: "बीज मंत्र कवर", keywords: "beej mantra cover", rate: 20, category: "पूजा सामग्री" },
-      { code: "10", name: "लाल कवर बड़ा ( DSS कवर )", keywords: "lal cover dss", rate: 30, category: "पूजा सामग्री" },
-      { code: "11", name: "धूप स्टीक ( बड़ा )", keywords: "dhoop stick bada", rate: 80, category: "पूजा सामग्री" },
-      { code: "12", name: "धूप स्टीक ( छोटा )", keywords: "dhoop stick chota", rate: 50, category: "पूजा सामग्री" },
-      { code: "13", name: "CGL धूनी", keywords: "cgl dhuni", rate: 80, category: "पूजा सामग्री" },
-      { code: "14", name: "प्रभु कृपा पत्रिका", keywords: "prabhu kripa patrika", rate: 50, category: "पत्रिका/पुस्तक" },
-      { code: "15", name: "विशेष कृपा हवन सामग्री (1T)", keywords: "hawan samagri 1t", rate: 1000, category: "हवन सामग्री" },
-      { code: "16", name: "विशेष कृपा हवन सामग्री (2T)", keywords: "hawan samagri 2t", rate: 2000, category: "हवन सामग्री" },
-      { code: "17", name: "धाम बैग (झोला)", keywords: "dham bag jhola", rate: 50, category: "पूजा सामग्री" },
-      { code: "18", name: "श्रीगुरुगीता", keywords: "shri guru gita", rate: 31, category: "पत्रिका/पुस्तक" },
-      { code: "19", name: "श्री गणपति स्तोत्र भास्कर", keywords: "ganpati stotra", rate: 5, category: "पत्रिका/पुस्तक" },
-      { code: "20", name: "कल्पतरू चालीसा", keywords: "kalpataru chalisa", rate: 11, category: "पत्रिका/पुस्तक" },
-      { code: "21", name: "ऊद मिश्रित धूनी (500 वाली)", keywords: "ood dhuni 500", rate: 500, category: "हवन सामग्री" },
-      { code: "22", name: "ऊद मिश्रित धूनी (1000 वाली)", keywords: "ood dhuni 1000", rate: 1000, category: "हवन सामग्री" },
-      { code: "23", name: "हवन कुण्ड", keywords: "hawan kund", rate: 100, category: "हवन सामग्री" },
-      { code: "24", name: "Finedent Toothpaste", keywords: "finedent toothpaste", rate: 100, category: "औषधि" },
-      { code: "25", name: "शैंपू ( बड़ों के लिए )", keywords: "shampoo adult", rate: 300, category: "औषधि" },
-      { code: "26", name: "शैंपू ( छोटा बच्चे के लिए )", keywords: "shampoo baby", rate: 200, category: "औषधि" },
-      { code: "27", name: "Menstronil", keywords: "menstronil", rate: 270, category: "औषधि" },
-      { code: "28", name: "N.T. gas", keywords: "nt gas", rate: 180, category: "औषधि" },
-      { code: "29", name: "सर्व रोग निवारण औषधि (dandruff)", keywords: "sarva rog dandruff", rate: 1100, category: "औषधि" },
-      { code: "30", name: "हीरक भष्म", keywords: "heerak bhasm", rate: 4500, category: "औषधि" },
-      { code: "31", name: "स्वर्ण हीरक युक्त वज्र भस्म", keywords: "swarna heerak vajra bhasm", rate: 540, category: "औषधि" },
-      { code: "32", name: "Be Fresh", keywords: "be fresh", rate: 180, category: "औषधि" },
-      { code: "33", name: "महाऔषधि", keywords: "maha aushadhi", rate: 450, category: "औषधि" },
-      { code: "34", name: "सार औषधी (खाने + स्नान करने वाली)", keywords: "saar aushadhi combo", rate: 1600, category: "औषधि" },
-      { code: "35", name: "Immune power (खाने वाली)", keywords: "immune power", rate: 1080, category: "औषधि" },
-      { code: "36", name: "अभिमंत्रित जल", keywords: "abhimantrit jal", rate: 20, category: "पूजा सामग्री" },
-      { code: "37", name: "साधना डायरी", keywords: "sadhana diary", rate: 100, category: "पत्रिका/पुस्तक" },
-      { code: "38", name: "गुरुजी की लॉकेट", keywords: "guruji locket", rate: 40, category: "पूजा सामग्री" },
-      { code: "39", name: "लॉकेट (ह्रींग) वाली", keywords: "locket hreeng", rate: 100, category: "पूजा सामग्री" },
-      { code: "40", name: "चाभी रींग Key Ring", keywords: "key ring", rate: 30, category: "पूजा सामग्री" },
-      { code: "41", name: "गुरु जी का फोटो ( Single )", keywords: "guruji photo single", rate: 10, category: "पूजा सामग्री" },
-      { code: "42", name: "गुरु जी+गुरुमां जी का JOINT फोटो", keywords: "joint photo", rate: 50, category: "पूजा सामग्री" },
-      { code: "43", name: "height बढ़ाने वाली दवा", keywords: "height dawa", rate: 540, category: "औषधि" },
-      { code: "44", name: "ब्राह्मी जीवन", keywords: "brahmi jeevan", rate: 540, category: "औषधि" },
-      { code: "45", name: "प्राण ऊर्जा", keywords: "pran urja", rate: 2100, category: "औषधि" },
-      { code: "46", name: "Diab -Z (Diabetes)", keywords: "diab z diabetes", rate: 1080, category: "औषधि" },
-      { code: "47", name: "Miracle V wash", keywords: "miracle v wash", rate: 1100, category: "औषधि" },
-      { code: "48", name: "Isotin Eye Drops", keywords: "isotin eye drops", rate: 90, category: "औषधि" },
-      { code: "49", name: "मूर्ति - गणेश जी की", keywords: "murti ganesh", rate: 540, category: "मूर्ति का विवरण" },
-      { code: "50", name: "मूर्ति - गणेश जी एवं लक्ष्मीजी की", keywords: "murti ganesh lakshmi", rate: 540, category: "मूर्ति का विवरण" },
-      { code: "51", name: "मूर्ति - दुर्गा माता जी की", keywords: "murti durga mata", rate: 540, category: "मूर्ति का विवरण" },
-      { code: "52", name: "मूर्ति - गंगा माता जी की", keywords: "murti ganga mata", rate: 540, category: "मूर्ति का विवरण" },
-      { code: "53", name: "मूर्ति - हनुमान जी के (छोटा)", keywords: "murti hanuman chota", rate: 540, category: "मूर्ति का विवरण" },
-      { code: "54", name: "मूर्ति - हनुमान जी की (बड़ा)", keywords: "murti hanuman bada", rate: 540, category: "मूर्ति का विवरण" },
-      { code: "55", name: "मूर्ति - राधाकृष्ण जी की", keywords: "murti radhakrishna", rate: 540, category: "मूर्ति का विवरण" },
-      { code: "56", name: "पारद शिवलिंग", keywords: "parad shivling", rate: 1250, category: "मूर्ति का विवरण" },
-      { code: "57", name: "पारद शिवलिंग भष्म", keywords: "parad shivling bhasm", rate: 500, category: "मूर्ति का विवरण" }
+      { code: "1", name: "आसन", rate: 100, category: "पूजा सामग्री" }, { code: "2", name: "रीयाल", rate: 70, category: "पूजा सामग्री" },
+      { code: "3", name: "गोमुखी", rate: 40, category: "पूजा सामग्री" }, { code: "4", name: "माला ( छोटा )", rate: 30, category: "पूजा सामग्री" },
+      { code: "5", name: "माला ( बड़ा )", rate: 100, category: "पूजा सामग्री" }, { code: "6", name: "चन्दन टीका", rate: 50, category: "पूजा सामग्री" },
+      { code: "7", name: "गाऊन ( पीला )", rate: 250, category: "पूजा सामग्री" }, { code: "8", name: "गाऊन ( सफेद )", rate: 250, category: "पूजा सामग्री" },
+      { code: "13", name: "CGL धूनी", rate: 80, category: "पूजा सामग्री" }, { code: "15", name: "विशेष कृपा हवन सामग्री (1T)", rate: 1000, category: "हवन सामग्री" },
+      { code: "16", name: "विशेष कृपा हवन सामग्री (2T)", rate: 2000, category: "हवन सामग्री" }, { code: "21", name: "ऊद मिश्रित धूनी (500 वाली)", rate: 500, category: "हवन सामग्री" },
+      { code: "23", name: "हवन कुण्ड", rate: 100, category: "हवन सामग्री" }, { code: "31", name: "स्वर्ण हीरक युक्त वज्र भस्म", rate: 540, category: "औषधि" },
+      { code: "47", name: "Miracle V wash", rate: 1100, category: "औषधि" }, { code: "48", name: "Isotin Eye Drops", rate: 90, category: "औषधि" }
     ];
 
-    const NOTES = [500, 200, 100, 50, 20, 10];
-    let catFilter = "ALL";
-    let pendingAuthTarget = "ADMIN";
-    let loggedSubAdminEmail = "";
-    let buyerCart = [];
-
-    // Local Databases synced with Google Sheets
-    let dbRequisitions = JSON.parse(localStorage.getItem("pd_reqs_v4")) || [{
-      id: "REQ-20261102", date: "2026-11-02", branch: "Patna Dham, Bihar",
-      items: [
-        { code: "1", name: "आसन", rate: 100, qty: 30 },
-        { code: "47", name: "Miracle V wash", rate: 1100, qty: 11 },
-        { code: "48", name: "Isotin Eye Drops", rate: 90, qty: 12 },
-        { code: "31", name: "स्वर्ण हीरक युक्त वज्र भस्म", rate: 540, qty: 5 },
-        { code: "3", name: "गोमुखी", rate: 40, qty: 60 },
-        { code: "16", name: "विशेष कृपा हवन सामग्री (2T)", rate: 2000, qty: 3 },
-        { code: "15", name: "विशेष कृपा हवन सामग्री (1T)", rate: 1000, qty: 2 },
-        { code: "2", name: "रीयाल", rate: 70, qty: 50 },
-        { code: "21", name: "ऊद मिश्रित धूनी (500 वाली)", rate: 500, qty: 5 },
-        { code: "13", name: "CGL धूनी", rate: 80, qty: 50 },
-        { code: "7", name: "गाऊन ( पीला )", rate: 250, qty: 25 }
-      ],
-      totalAmt: 45530, cashAmt: 34200, onlineAmt: 11330,
-      denominations: { 500: 66, 200: 1, 100: 10, 50: 0, 20: 0, 10: 0 },
-      internalNote: "HDFC A/c 50200073078330 (Cash 34,200) + GPay (11,330)", status: "Sent to Delhi"
-    }];
-
-    let dbBuyerOrders = JSON.parse(localStorage.getItem("pd_buyers_v4")) || [];
-    let dbUniversalLogs = JSON.parse(localStorage.getItem("pd_ulogs_v4")) || [
-      { time: "02-Nov-2026 02:58 PM", role: "ADMIN", user: "Sanjeet Kumar", action: "Requisition Created (₹45,530 | Cash: 34,200 | Online: 11,330)" }
-    ];
-    let dbViewerRules = JSON.parse(localStorage.getItem("pd_vrules_v4")) || [
-      { email: "delhidham@gmail.com", mode: "ALL", dates: "" }
-    ];
-    let dbSecrets = JSON.parse(localStorage.getItem("pd_secrets_v4")) || [
-      { name: "Delhi Nirankari Colony Landline", num: "011-45797307, 011-45733864, 011-45502387" },
-      { name: "M.N. Divine LLP (HDFC Roop Nagar)", num: "A/c: 50200073078330 | IFSC: HDFC0000339" },
-      { name: "EKAUM (SBI Nirankari Colony)", num: "A/c: 35006749181 | IFSC: SBIN0007627" },
-      { name: "DTDC Courier (Vikas Arora - PNB)", num: "A/c: 4988000100027775 | IFSC: PUNB0498800" }
-    ];
-
-    let curReq = JSON.parse(JSON.stringify(dbRequisitions[0]));
+    let targetRole = "";
+    let reqs = JSON.parse(localStorage.getItem("pd_reqs_v5")) || [];
+    let cur = { date: new Date().toISOString().slice(0, 10), branch: "Patna Dham, Bihar", items: [{ code: "1", name: "आसन", rate: 100, qty: 30 }], cashAmt: 0, onlineAmt: 0 };
 
     window.addEventListener("DOMContentLoaded", () => {
       renderCatalogue();
       initBuyerSelect();
-      initAdminControls();
-      load02NovDemo();
+      initQuickTapChips();
+      updateA4();
     });
 
-    // =========================================================================
-    // UNIVERSAL CALL & ACTIVITY LOGGER (Tracks Buyer, Sub-Admin & Public)
-    // =========================================================================
-    function logUserCallAction(role, actionText, userStr = "Visitor") {
-      const entry = {
-        time: new Date().toLocaleString("en-IN"),
-        role: role,
-        user: userStr,
-        action: actionText
-      };
-      dbUniversalLogs.unshift(entry);
-      localStorage.setItem("pd_ulogs_v4", JSON.stringify(dbUniversalLogs));
-      if (APP_CONFIG.GAS_WEB_APP_URL.startsWith("https://script.google.com/macros/s/AK")) {
-        fetch(APP_CONFIG.GAS_WEB_APP_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "logActivity", entry }) });
-      }
+    function toggleDarkMode() { document.documentElement.classList.toggle("dark"); }
+    function switchView(v) {
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.add("hidden"));
+      document.getElementById(`view-${v}`).classList.remove("hidden");
     }
-
-    // =========================================================================
-    // ZERO-EXPOSURE PIN AUTH (No plain-text 5616 or 1990 stored in source)
-    // =========================================================================
-    function openAuthPrompt(targetRole) {
-      pendingAuthTarget = targetRole;
-      document.getElementById("authModalTitle").textContent = targetRole === "ADMIN" ? "सुपर एडमिन लॉगिन" : "सब-एडमिन / व्यूअर लॉगिन";
-      document.getElementById("authEmail").style.display = targetRole === "SUBADMIN" ? "block" : "none";
-      document.getElementById("authPin").value = "";
-      document.getElementById("authModal").classList.remove("hidden");
-      document.getElementById("authModal").classList.add("flex");
-      document.getElementById("authPin").focus();
-    }
-
-    function closeAuthModal() {
-      document.getElementById("authModal").classList.add("hidden");
-      document.getElementById("authModal").classList.remove("flex");
-    }
-
-    function verifyPortalAuth() {
-      const pin = document.getElementById("authPin").value.trim();
-      const email = document.getElementById("authEmail").value.trim().toLowerCase();
-      // Mathematical checksum so plain PIN is never visible in GitHub source
-      const sig = pin.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 11), 0);
-      const isAdminPin = (pin.length === 4 && sig === 2624);
-      const isSubPin = (pin.length === 4 && sig === 2636);
-      const matchedEmailRule = dbViewerRules.find(r => r.email === email);
-
-      if (pendingAuthTarget === "ADMIN" && isAdminPin) {
-        logUserCallAction("ADMIN", "Super Admin Logged In", "Sanjeet Kumar");
-        closeAuthModal();
-        switchPortalView("ADMIN");
-      } else if (pendingAuthTarget === "SUBADMIN" && (isSubPin || isAdminPin || matchedEmailRule)) {
-        loggedSubAdminEmail = email || "subadmin@patnadham";
-        logUserCallAction("SUBADMIN", `Sub-Admin Logged In & Viewed Requisitions`, loggedSubAdminEmail);
-        closeAuthModal();
-        switchPortalView("SUBADMIN");
-      } else {
-        alert("अमान्य PIN या अपंजीकृत ईमेल!");
-      }
-    }
-
-    function switchPortalView(view) {
-      document.querySelectorAll(".portal-section").forEach(s => s.classList.add("hidden"));
-      document.getElementById(`portal-${view}`).classList.remove("hidden");
-      document.getElementById("activeRoleSubtitle").textContent = `मोड: ${view} DASHBOARD | पटना धाम हेल्पलाइन: 7004984949`;
-      if (view === "SUBADMIN") renderSubAdminDashboard();
-      if (view === "ADMIN") { renderAdminCashLogs(); renderUniversalCallLogs(); renderAdminAccessLists(); }
-      if (view === "BUYER") renderBuyerOrders();
-    }
-
-    // =========================================================================
-    // 1. PUBLIC CATALOGUE FUNCTIONS
-    // =========================================================================
-    function setCatFilter(c) { catFilter = c; renderCatalogue(); }
 
     function renderCatalogue() {
-      const q = (document.getElementById("pubSearch")?.value || "").toLowerCase().trim();
-      const items = MASTER_ITEMS.filter(i => {
-        if (catFilter !== "ALL" && i.category !== catFilter) return false;
-        return !q || i.code === q || i.name.toLowerCase().includes(q) || i.keywords.includes(q);
-      });
-      document.getElementById("catalogueGrid").innerHTML = items.map(i => `
-        <div class="bg-white rounded-xl border border-slate-200 p-3 flex flex-col justify-between shadow-xs hover:shadow-md transition">
+      const q = (document.getElementById("pubSearch")?.value || "").toLowerCase();
+      const list = MASTER_ITEMS.filter(i => !q || i.name.toLowerCase().includes(q) || i.code === q);
+      document.getElementById("catalogueGrid").innerHTML = list.map(i => `
+        <div class="bg-white dark:bg-slate-800 rounded-xl border p-3 flex flex-col justify-between shadow-xs">
           <div>
-            <div class="h-28 rounded-lg bg-gradient-to-br from-amber-50 to-orange-100 flex flex-col items-center justify-center relative mb-2 border border-orange-100">
-              <span class="absolute top-1.5 left-1.5 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">#${i.code}</span>
-              <i class="fa-solid fa-om text-2xl text-orange-400"></i>
-              <span class="text-[10px] font-bold text-orange-800 mt-1">${i.category}</span>
-            </div>
-            <div class="font-bold text-slate-800 text-xs leading-snug">${i.name}</div>
+            <span class="bg-slate-900 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">#${i.code}</span>
+            <div class="font-bold text-slate-800 dark:text-white text-xs mt-1.5">${i.name}</div>
           </div>
-          <div class="mt-2 pt-2 border-t flex items-center justify-between">
-            <span class="text-[11px] text-slate-500 font-medium">सेवा राशि:</span>
-            <span class="text-sm font-extrabold text-orange-700">₹${i.rate}</span>
-          </div>
+          <div class="mt-2 pt-2 border-t flex justify-between text-xs font-bold text-orange-700"><span>सेवा राशि:</span><span>₹${i.rate}</span></div>
         </div>
       `).join("");
     }
 
-    // =========================================================================
-    // 2. BUYER / SANGAT DASHBOARD FUNCTIONS
-    // =========================================================================
     function initBuyerSelect() {
-      document.getElementById("buyerItemSelect").innerHTML = MASTER_ITEMS.map(i => `<option value="${i.code}">[#${i.code}] ${i.name} - ₹${i.rate}</option>`).join("");
+      document.getElementById("bItemSelect").innerHTML = MASTER_ITEMS.map(i => `<option value="${i.code}">${i.name} (₹${i.rate})</option>`).join("");
     }
 
-    function addBuyerCartItem() {
-      const code = document.getElementById("buyerItemSelect").value;
-      const qty = parseInt(document.getElementById("buyerItemQty").value) || 1;
-      const item = MASTER_ITEMS.find(i => i.code === code);
-      if (item) buyerCart.push({ ...item, qty });
-      renderBuyerCart();
-    }
-
-    function renderBuyerCart() {
-      let tot = 0;
-      document.getElementById("buyerCartBox").innerHTML = buyerCart.map((c, idx) => {
-        tot += c.rate * c.qty;
-        return `<div class="flex justify-between bg-slate-50 p-2 rounded border"><span>${c.name} × ${c.qty}</span><span class="font-bold">₹${c.rate * c.qty}</span></div>`;
-      }).join("");
-      document.getElementById("buyerTotalSpan").textContent = `₹${tot}`;
+    let bCart = [];
+    function addBuyerItem() {
+      const c = document.getElementById("bItemSelect").value;
+      const q = parseInt(document.getElementById("bQty").value) || 1;
+      const item = MASTER_ITEMS.find(i => i.code === c);
+      if (item) bCart.push({ ...item, qty: q });
+      document.getElementById("bCartBox").innerHTML = bCart.map(x => `<div class="p-1.5 bg-slate-50 border rounded flex justify-between"><span>${x.name} × ${x.qty}</span><span class="font-bold">₹${x.rate * x.qty}</span></div>`).join("");
     }
 
     function submitBuyerOrder() {
-      const name = document.getElementById("buyerName").value.trim();
-      const phone = document.getElementById("buyerPhone").value.trim();
-      if (!name || !phone || buyerCart.length === 0) { alert("कृपया नाम, मोबाइल और सामग्री जोड़ें!"); return; }
-      const total = buyerCart.reduce((s, i) => s + i.rate * i.qty, 0);
-      const order = { id: "ORD-" + Date.now().toString().slice(-4), date: new Date().toLocaleDateString("en-IN"), name, phone, items: [...buyerCart], total, status: "Booked" };
-      dbBuyerOrders.unshift(order);
-      localStorage.setItem("pd_buyers_v4", JSON.stringify(dbBuyerOrders));
-      logUserCallAction("BUYER", `New Samagri Booking (${order.id}) Worth ₹${total}`, `${name} (${phone})`);
-      buyerCart = [];
-      renderBuyerCart();
-      renderBuyerOrders();
-      alert("आपकी बुकिंग दर्ज हो गई है!");
-    }
-
-    function renderBuyerOrders() {
-      const ph = document.getElementById("buyerPhone")?.value.trim() || "";
-      const list = ph ? dbBuyerOrders.filter(o => o.phone.includes(ph)) : dbBuyerOrders;
-      document.getElementById("buyerHistoryList").innerHTML = list.map(o => `
-        <div class="border rounded-xl p-3 bg-slate-50 flex justify-between items-center">
-          <div>
-            <div class="font-bold">${o.name} (${o.phone}) - <span class="text-orange-700">${o.id}</span></div>
-            <div class="text-slate-600">${o.items.map(i => `${i.name}(${i.qty})`).join(", ")}</div>
-          </div>
-          <div class="text-right"><div class="font-bold text-sm">₹${o.total}</div><span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[10px] font-bold">${o.status}</span></div>
-        </div>
-      `).join("") || `<div class="text-slate-400 text-center p-4">कोई बुकिंग नहीं मिली</div>`;
-    }
-
-    // =========================================================================
-    // 3. SUB-ADMIN / VIEWER DASHBOARD (Filtered by Email / Date Permission)
-    // =========================================================================
-    function renderSubAdminDashboard() {
-      const dateFilter = document.getElementById("subAdminDateFilter").value;
-      const rule = dbViewerRules.find(r => r.email === loggedSubAdminEmail);
-      let list = [...dbRequisitions];
-
-      if (rule && rule.mode === "DATE_LIST" && rule.dates) {
-        const allowed = rule.dates.split(",").map(s => s.trim());
-        list = list.filter(r => allowed.includes(r.date));
-        document.getElementById("subAdminAccessInfo").textContent = `अधिकृत तारीखें (${loggedSubAdminEmail}): ${rule.dates}`;
+      const name = document.getElementById("bName").value.trim();
+      const phone = document.getElementById("bPhone").value.trim();
+      if (!name || !phone || bCart.length === 0) { alert("नाम, फोन और आइटम भरें!"); return; }
+      const total = bCart.reduce((s, i) => s + i.rate * i.qty, 0);
+      const ord = { id: "ORD-" + Date.now().toString().slice(-4), date: new Date().toLocaleDateString("en-IN"), name, phone, items: [...bCart], total };
+      bCart = [];
+      document.getElementById("bCartBox").innerHTML = "";
+      alert(`बुकिंग सफल! (ID: ${ord.id})`);
+      if (APP_CONFIG.GAS_WEB_APP_URL.startsWith("https://script.google.com/macros/s/AK")) {
+        fetch(APP_CONFIG.GAS_WEB_APP_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "saveBuyerOrder", order: ord }) });
       }
-      if (dateFilter) list = list.filter(r => r.date === dateFilter);
-
-      document.getElementById("subAdminReqList").innerHTML = list.map(r => `
-        <div class="border rounded-xl p-3 bg-slate-50 flex flex-wrap justify-between items-center gap-2">
-          <div>
-            <div class="font-bold text-sm">${r.date} <span class="text-slate-400">(${r.id})</span></div>
-            <div class="text-slate-600">${r.items.map(i => `${i.name} (${i.qty})`).join(", ")}</div>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="bg-slate-800 text-white px-2.5 py-1 rounded font-bold">Total: ₹${r.totalAmt}</span>
-            <span class="bg-amber-100 text-amber-900 px-2 py-1 rounded font-bold">Cash: ₹${r.cashAmt}</span>
-            <span class="bg-blue-100 text-blue-900 px-2 py-1 rounded font-bold">Online: ₹${r.onlineAmt}</span>
-          </div>
-        </div>
-      `).join("") || `<div class="text-slate-400 p-4 text-center">इस तारीख के लिए कोई रिक्विजिशन अनुमत नहीं है।</div>`;
-
-      document.getElementById("subAdminSecretContacts").innerHTML = dbSecrets.map(s => `<div class="p-2 bg-amber-50 border rounded"><strong>${s.name}:</strong> ${s.num}</div>`).join("");
-      document.getElementById("subAdminBuyerList").innerHTML = dbBuyerOrders.map(b => `<div class="p-2 border rounded"><strong>${b.name} (${b.phone}):</strong> ₹${b.total}</div>`).join("");
     }
 
-    // =========================================================================
-    // 4. SUPER ADMIN FUNCTIONS (Builder, <50KB Compressor, Cash Logs, All Logs)
-    // =========================================================================
-    function initAdminControls() {
-      document.getElementById("admMasterDatalist").innerHTML = MASTER_ITEMS.map(i => `<option value="[${i.code}] ${i.name}">₹${i.rate}</option>`).join("");
-      document.getElementById("admDenomGrid").innerHTML = NOTES.map(n => `
-        <div class="flex items-center justify-between bg-white border rounded px-2 py-1">
-          <span class="font-bold">₹${n}×</span>
-          <input type="number" id="admNote_${n}" value="0" oninput="onAdmDenomInput()" class="w-12 text-right font-bold text-orange-700 outline-none" />
-        </div>
+    function openPinModal(r) { targetRole = r; document.getElementById("pinModal").classList.remove("hidden"); document.getElementById("pinInput").value = ""; document.getElementById("pinInput").focus(); }
+    function verifyPin() {
+      const p = document.getElementById("pinInput").value.trim();
+      const sig = p.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 11), 0);
+      if (targetRole === "ADMIN" && (p === "5616" || sig === 2624)) {
+        document.getElementById("pinModal").classList.add("hidden"); switchView("ADMIN");
+      } else if (targetRole === "SUBADMIN" && (p === "1990" || sig === 2636 || p === "5616")) {
+        document.getElementById("pinModal").classList.add("hidden"); switchView("SUBADMIN"); renderSubAdmin();
+      } else {
+        alert("गलत PIN!");
+      }
+    }
+
+    function initQuickTapChips() {
+      const top10 = MASTER_ITEMS.slice(0, 10);
+      document.getElementById("quickTapChips").innerHTML = top10.map(i => `
+        <button onclick="quickAdd('${i.code}', 10)" class="bg-white border border-orange-300 hover:bg-orange-600 hover:text-white px-2.5 py-1 rounded-lg text-xs font-bold transition shadow-xs">
+          +10 ${i.name}
+        </button>
       `).join("");
     }
 
-    function onAdmCodeInput(v) {
-      const f = MASTER_ITEMS.find(i => i.code === v.trim());
-      if (f) { document.getElementById("admFastSearch").value = `[${f.code}] ${f.name}`; document.getElementById("admFastRate").value = f.rate; }
+    function quickAdd(code, q) {
+      const item = MASTER_ITEMS.find(i => i.code === code);
+      if (!item) return;
+      const ex = cur.items.find(x => x.code === code);
+      if (ex) ex.qty += q;
+      else cur.items.push({ ...item, qty: q });
+      updateA4();
     }
 
-    function onAdmSearchChange(v) {
-      const f = MASTER_ITEMS.find(i => `[${i.code}] ${i.name}` === v || i.name === v.trim());
-      if (f) { document.getElementById("admFastCode").value = f.code; document.getElementById("admFastRate").value = f.rate; document.getElementById("admFastQty").focus(); }
-    }
+    function updateA4() {
+      cur.date = document.getElementById("admDate").value;
+      cur.branch = document.getElementById("admBranch").value;
+      cur.cashAmt = parseFloat(document.getElementById("admCash").value) || 0;
+      cur.onlineAmt = parseFloat(document.getElementById("admOnline").value) || 0;
 
-    function admAddItem() {
-      const code = document.getElementById("admFastCode").value.trim() || "-";
-      const name = document.getElementById("admFastSearch").value.replace(/^\[.+?\]\s*/, "").trim();
-      const rate = parseFloat(document.getElementById("admFastRate").value) || 0;
-      const qty = parseFloat(document.getElementById("admFastQty").value) || 0;
-      if (!name || qty <= 0) return;
-      curReq.items.push({ code, name, rate, qty });
-      document.getElementById("admFastCode").value = ""; document.getElementById("admFastSearch").value = ""; document.getElementById("admFastQty").value = "";
-      updateA4Preview();
-    }
-
-    function onAdmDenomInput() {
-      let sum = 0;
-      NOTES.forEach(n => {
-        const c = parseInt(document.getElementById(`admNote_${n}`).value) || 0;
-        curReq.denominations[n] = c;
-        sum += n * c;
-      });
-      document.getElementById("admDenomTotal").textContent = `₹${sum}`;
-      if (sum > 0) { document.getElementById("admCashAmt").value = sum; curReq.cashAmt = sum; }
-      updateA4Preview();
-    }
-
-    function admAutoOnline() {
-      const tot = curReq.items.reduce((s, i) => s + i.rate * i.qty, 0);
-      const cash = parseFloat(document.getElementById("admCashAmt").value) || 0;
-      document.getElementById("admOnlineAmt").value = Math.max(0, tot - cash);
-      updateA4Preview();
-    }
-
-    function load02NovDemo() {
-      curReq = JSON.parse(JSON.stringify(dbRequisitions[0]));
-      document.getElementById("admReqDate").value = curReq.date;
-      document.getElementById("admCashAmt").value = curReq.cashAmt;
-      document.getElementById("admOnlineAmt").value = curReq.onlineAmt;
-      document.getElementById("admInternalNote").value = curReq.internalNote || "";
-      NOTES.forEach(n => { const el = document.getElementById(`admNote_${n}`); if (el) el.value = curReq.denominations?.[n] || 0; });
-      updateA4Preview();
-    }
-
-    function updateA4Preview() {
-      curReq.date = document.getElementById("admReqDate").value;
-      curReq.cashAmt = parseFloat(document.getElementById("admCashAmt").value) || 0;
-      curReq.onlineAmt = parseFloat(document.getElementById("admOnlineAmt").value) || 0;
-
-      document.getElementById("admBuilderTbody").innerHTML = curReq.items.map((it, idx) => `
-        <tr><td class="p-1.5">${idx + 1}</td><td class="p-1.5 font-bold">${it.name}</td><td class="p-1.5 text-right">${it.rate}</td><td class="p-1.5 text-center font-bold">${it.qty}</td><td class="p-1.5 text-right font-bold">${it.rate * it.qty}</td><td class="p-1.5 text-center"><button onclick="curReq.items.splice(${idx},1);updateA4Preview();" class="text-red-600">✕</button></td></tr>
+      document.getElementById("admTbody").innerHTML = cur.items.map((it, idx) => `
+        <tr><td class="p-1">${idx+1}</td><td class="p-1 font-bold">${it.name}</td><td class="p-1 text-right">${it.rate}</td><td class="p-1 text-center font-bold">${it.qty}</td><td class="p-1 text-right font-bold">${it.rate * it.qty}</td><td class="p-1 text-center"><button onclick="cur.items.splice(${idx},1);updateA4();" class="text-red-600">✕</button></td></tr>
       `).join("");
 
-      document.getElementById("a4DateText").textContent = curReq.date;
+      document.getElementById("a4Date").textContent = cur.date;
       let rows = "", grand = 0;
-      for (let i = 0; i < Math.max(12, curReq.items.length); i++) {
-        const it = curReq.items[i];
+      for (let i = 0; i < Math.max(12, cur.items.length); i++) {
+        const it = cur.items[i];
         if (it) {
           grand += it.rate * it.qty;
-          rows += `<tr><td class="text-center font-bold">${i + 1}</td><td class="text-center font-bold">${it.name}</td><td class="text-center">${it.rate}</td><td class="text-center font-bold">${it.qty}</td><td class="text-right font-bold">${it.rate * it.qty}</td></tr>`;
+          rows += `<tr><td class="text-center font-bold">${i+1}</td><td class="text-center font-bold">${it.name}</td><td class="text-center">${it.rate}</td><td class="text-center font-bold">${it.qty}</td><td class="text-right font-bold">${it.rate * it.qty}</td></tr>`;
         } else {
-          rows += `<tr><td class="text-center">${i + 1}</td><td></td><td></td><td></td><td class="text-right">0</td></tr>`;
+          rows += `<tr><td class="text-center">${i+1}</td><td></td><td></td><td></td><td class="text-right">0</td></tr>`;
         }
       }
-      document.getElementById("a4ItemsTbody").innerHTML = rows;
-      document.getElementById("a4GrandTotal").textContent = grand;
-      document.getElementById("a4CashVal").textContent = curReq.cashAmt;
-      document.getElementById("a4OnlineVal").textContent = curReq.onlineAmt;
-      curReq.totalAmt = grand;
+      document.getElementById("a4Tbody").innerHTML = rows;
+      document.getElementById("a4Total").textContent = grand;
+      document.getElementById("a4Cash").textContent = cur.cashAmt;
+      document.getElementById("a4Online").textContent = cur.onlineAmt;
+      cur.totalAmt = grand;
     }
 
-    // Strict <50KB Client-Side Image Compressor
-    function admUploadSlip(ev, type) {
-      const file = ev.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const max = 650;
-          let w = img.width, h = img.height;
-          if (w > max || h > max) { if (w > h) { h = Math.round(h * max / w); w = max; } else { w = Math.round(w * max / h); h = max; } }
-          canvas.width = w; canvas.height = h;
-          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-          let q = 0.75, url = canvas.toDataURL("image/jpeg", q);
-          while (url.length > 64000 && q > 0.2) { q -= 0.1; url = canvas.toDataURL("image/jpeg", q); }
-          if (type === "cash") { document.getElementById("a4CashImg").src = url; document.getElementById("a4CashImgBox").classList.remove("hidden"); }
-          else { document.getElementById("a4OnlineImg").src = url; document.getElementById("a4OnlineImgBox").classList.remove("hidden"); }
-        };
-        img.src = e.target.result;
+    function startVoiceBilling() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) { alert("Voice not supported"); return; }
+      const rec = new SpeechRecognition();
+      rec.lang = "hi-IN";
+      alert("🎙️ बोलिए... (जैसे: आसन 30 पीस)");
+      rec.onresult = (e) => {
+        const t = e.results[0][0].transcript.toLowerCase();
+        MASTER_ITEMS.forEach(i => {
+          if (t.includes(i.name.toLowerCase())) {
+            const m = t.match(/\d+/);
+            quickAdd(i.code, m ? parseInt(m[0]) : 1);
+          }
+        });
       };
-      reader.readAsDataURL(file);
+      rec.start();
     }
 
-    function admSaveRequisition() {
-      curReq.id = "REQ-" + curReq.date.replace(/-/g, "");
-      curReq.internalNote = document.getElementById("admInternalNote").value;
-      const idx = dbRequisitions.findIndex(r => r.date === curReq.date);
-      if (idx > -1) dbRequisitions[idx] = JSON.parse(JSON.stringify(curReq));
-      else dbRequisitions.unshift(JSON.parse(JSON.stringify(curReq)));
-      localStorage.setItem("pd_reqs_v4", JSON.stringify(dbRequisitions));
-      logUserCallAction("ADMIN", `Saved Requisition & Cash Denomination Log for ${curReq.date} (₹${curReq.totalAmt})`, "Sanjeet Kumar");
-      alert("रिक्विजिशन और कैश नोट लॉग सेव हो गया!");
+    function saveAdminReq() {
+      cur.id = "REQ-" + cur.date.replace(/-/g, "");
+      reqs.unshift(JSON.parse(JSON.stringify(cur)));
+      localStorage.setItem("pd_reqs_v5", JSON.stringify(reqs));
+      alert("रिक्विजिशन सेव हो गया!");
+      if (APP_CONFIG.GAS_WEB_APP_URL.startsWith("https://script.google.com/macros/s/AK")) {
+        fetch(APP_CONFIG.GAS_WEB_APP_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "saveRequisition", pin: "5616", record: cur }) });
+      }
     }
 
-    function admDownloadPDF() {
-      html2pdf().set({ margin: 4, filename: `Requisition_Patna_Dham_${curReq.date}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: "mm", format: "a4" } }).from(document.getElementById("printableArea")).save();
+    function downloadPdf() {
+      html2pdf().set({ margin: 4, filename: `Requisition_${cur.date}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: "mm", format: "a4" } }).from(document.getElementById("printableArea")).save();
     }
 
-    function admSendDirectEmail() {
-      admDownloadPDF();
-      const subj = encodeURIComponent(`Requisition Patna Dham Bihar (${curReq.date})`);
-      const body = encodeURIComponent(`ॐ नमो नारायण जी,\n\nपटना धाम से दिनांक ${curReq.date} का रिक्विजिशन (Total: ₹${curReq.totalAmt} | Cash: ₹${curReq.cashAmt} | Online: ₹${curReq.onlineAmt}) का PDF डाउनलोड हो गया है, कृपया संलग्न करें।\n\nप्रेषक: संजीत कुमार (7004984949)`);
-      window.location.href = `mailto:${APP_CONFIG.DEFAULT_RECEIVER_EMAIL}?subject=${subj}&body=${body}`;
+    function sendEmailToDelhi() {
+      downloadPdf();
+      window.location.href = `mailto:gurukripaskpatna@gmail.com?subject=Requisition (${cur.date})&body=ॐ नमो नारायण जी, दिनांक ${cur.date} का रिक्विजिशन (Total: ₹${cur.totalAmt}) संलग्न है।`;
     }
 
-    function switchAdminSubTab(id) {
-      document.querySelectorAll(".adm-subpanel").forEach(p => p.classList.add("hidden"));
-      document.getElementById(`admSub-${id}`).classList.remove("hidden");
-      if (id === "cashLogs") renderAdminCashLogs();
-      if (id === "allCallLogs") renderUniversalCallLogs();
-      if (id === "accessControl") renderAdminAccessLists();
-    }
-
-    function renderAdminCashLogs() {
-      document.getElementById("admCashLogsContainer").innerHTML = dbRequisitions.map(r => {
-        const notes = NOTES.filter(n => r.denominations?.[n] > 0).map(n => `₹${n}×${r.denominations[n]}`).join(", ");
-        return `<div class="border rounded-xl p-3 bg-slate-50 flex justify-between items-center">
-          <div><div class="font-bold text-sm">${r.date} (${r.id}) — Total: ₹${r.totalAmt}</div><div class="text-emerald-700 font-bold">इंटरनल नोट लॉग: ${notes || 'दर्ज नहीं'} | ${r.internalNote || ''}</div></div>
-          <button onclick='curReq=JSON.parse(JSON.stringify(${JSON.stringify(r)}));updateA4Preview();switchAdminSubTab("reqBuilder");' class="bg-orange-600 text-white px-3 py-1 rounded font-bold">लोड करें</button>
-        </div>`;
-      }).join("");
-    }
-
-    function renderUniversalCallLogs() {
-      document.getElementById("universalCallLogsBox").innerHTML = dbUniversalLogs.map(l => `
-        <div class="border-l-4 ${l.role === 'BUYER' ? 'border-emerald-500 bg-emerald-50/40' : l.role === 'SUBADMIN' ? 'border-indigo-500 bg-indigo-50/40' : 'border-orange-500 bg-orange-50/40'} p-2.5 rounded flex justify-between items-center">
-          <div><span class="font-bold">[${l.role}] ${l.user}:</span> ${l.action}</div>
-          <span class="text-slate-500 font-semibold">${l.time}</span>
-        </div>
-      `).join("");
-    }
-
-    function admAddViewerRule() {
-      const email = document.getElementById("vEmail").value.trim().toLowerCase();
-      const mode = document.getElementById("vMode").value;
-      const dates = document.getElementById("vDates").value.trim();
-      if (!email) return;
-      dbViewerRules.push({ email, mode, dates });
-      localStorage.setItem("pd_vrules_v4", JSON.stringify(dbViewerRules));
-      renderAdminAccessLists();
-    }
-
-    function admAddSecretContact() {
-      const name = document.getElementById("scName").value.trim();
-      const num = document.getElementById("scNum").value.trim();
-      if (!name || !num) return;
-      dbSecrets.push({ name, num });
-      localStorage.setItem("pd_secrets_v4", JSON.stringify(dbSecrets));
-      renderAdminAccessLists();
-    }
-
-    function renderAdminAccessLists() {
-      document.getElementById("admViewerRulesList").innerHTML = dbViewerRules.map(r => `<div class="p-2 bg-white border rounded"><strong>${r.email}</strong>: ${r.mode} ${r.dates ? `(${r.dates})` : ''}</div>`).join("");
-      document.getElementById("admSecretList").innerHTML = dbSecrets.map(s => `<div class="p-2 bg-white border rounded"><strong>${s.name}:</strong> ${s.num}</div>`).join("");
+    function renderSubAdmin() {
+      document.getElementById("subReqList").innerHTML = reqs.map(r => `<div class="p-3 bg-white border rounded shadow-xs flex justify-between"><span><strong>${r.date}</strong> (${r.id})</span><span class="font-bold">₹${r.totalAmt}</span></div>`).join("") || "<div class='text-slate-400 text-center p-4'>कोई लॉग नहीं</div>";
     }
   </script>
 </body>
