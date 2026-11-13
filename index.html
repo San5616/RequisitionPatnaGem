@@ -1470,8 +1470,8 @@
       }
     }
 
-    // =========================================================================
-    // HISTORICAL LOGS (192 ORDERS + CLEAN PHOTO & DATE RESTORATION)
+        // =========================================================================
+    // HISTORICAL LOGS (VIEWER GETS A4 PDF VIEW BUTTON + ADMIN GETS EDIT & VIEW)
     // =========================================================================
     function renderHistoryLogs() {
       const q = (document.getElementById("logSearchInput")?.value || "").toLowerCase();
@@ -1483,19 +1483,59 @@
         return;
       }
 
-      box.innerHTML = filtered.map((r, idx) => `
-        <div class="border dark:border-slate-700 rounded-xl p-3 bg-slate-50 dark:bg-slate-800 flex flex-wrap justify-between items-center gap-2">
-          <div>
-            <div class="font-bold text-sm text-orange-700 dark:text-amber-400">📅 ${formatDDMMMYYYY(r.date)} <span class="text-xs text-slate-400">(${r.id})</span></div>
-            <div class="text-slate-600 dark:text-slate-300 mt-0.5">${(r.items || []).map(i => `${i.name} (${i.qty})`).join(", ")}</div>
-            ${r.pendingItems && r.pendingItems.length > 0 ? `<div class="text-red-600 font-bold mt-1">🔴 Pending: ${r.pendingItems.map(p => `${p.name} (${p.qty})`).join(", ")}</div>` : ""}
+      box.innerHTML = filtered.map((r) => {
+        // असली इंडेक्स निकालें ताकि सर्च करने के बाद भी सही तारीख खुले
+        const realIdx = historyLogs.indexOf(r);
+        return `
+          <div class="border dark:border-slate-700 rounded-xl p-3 bg-slate-50 dark:bg-slate-800 flex flex-wrap justify-between items-center gap-2">
+            <div>
+              <div class="font-bold text-sm text-orange-700 dark:text-amber-400">📅 ${formatDDMMMYYYY(r.date)} <span class="text-xs text-slate-400">(${r.id})</span></div>
+              <div class="text-slate-600 dark:text-slate-300 mt-0.5">${(r.items || []).map(i => `${i.name} (${i.qty})`).join(", ")}</div>
+              ${r.pendingItems && r.pendingItems.length > 0 ? `<div class="text-red-600 font-bold mt-1">🔴 Pending: ${r.pendingItems.map(p => `${p.name} (${p.qty})`).join(", ")}</div>` : ""}
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="bg-slate-900 text-white px-2.5 py-1.5 rounded-lg font-bold">Total: ₹${r.totalAmt}</span>
+              
+              <!-- Viewer और Admin दोनों के लिए सीधा A4 PDF View बटन -->
+              <button onclick="viewLogInPDFModal(${realIdx})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold shadow flex items-center gap-1">
+                <i class="fa-solid fa-file-pdf"></i> View PDF
+              </button>
+
+              <!-- केवल Admin के लिए बिल्डर में एडिट करने का बटन -->
+              ${activeRole === "ADMIN" ? `
+                <button onclick="loadHistoricalIntoBuilder(${realIdx})" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded-lg font-bold shadow flex items-center gap-1">
+                  <i class="fa-solid fa-pen-to-square"></i> एडिट करें
+                </button>
+              ` : ""}
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="bg-slate-900 text-white px-2.5 py-1 rounded font-bold">Total: ₹${r.totalAmt}</span>
-            ${activeRole === "ADMIN" ? `<button onclick="loadHistoricalIntoBuilder(${idx})" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded-lg font-bold shadow">खोलें / प्रिंट</button>` : ""}
-          </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
+    }
+
+    // नया फंक्शन: व्यूअर (Viewer) या एडमिन के लिए सीधे पॉपअप में A4 PDF फॉर्मेट दिखाएं (बिना एडिट मोड खोले)
+    function viewLogInPDFModal(idx) {
+      const rec = historyLogs[idx];
+      if (!rec) return;
+      currentBill = {
+        id: rec.id || "REQ-HIST",
+        date: normalizeToISODate(rec.date),
+        branch: rec.branch || "Patna Dham, Bihar",
+        items: JSON.parse(JSON.stringify(rec.items || [])),
+        pendingItems: JSON.parse(JSON.stringify(rec.pendingItems || [])),
+        cashAmt: Number(rec.cashAmt) || 0,
+        onlineAmt: Number(rec.onlineAmt) || 0,
+        specialNote: rec.specialNote || "",
+        cashSlipBase64: rec.cashSlipBase64 || "",
+        onlineSlipBase64: rec.onlineSlipBase64 || "",
+        cashSlipHeight: rec.cashSlipHeight || 175,
+        onlineSlipHeight: rec.onlineSlipHeight || 175,
+        slipAlign: rec.slipAlign || "justify-between",
+        fontSize: rec.fontSize || 14
+      };
+      syncBillInputsFromState();
+      updateA4Preview();
+      openFullPrintPreview(); // सीधे A4 PDF Print Preview पॉपअप खोल देगा!
     }
 
     function loadHistoricalIntoBuilder(idx) {
