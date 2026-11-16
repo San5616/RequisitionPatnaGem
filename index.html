@@ -4251,6 +4251,520 @@
         if (typeof window.updateA4Preview === "function") window.updateA4Preview();
       }, 150);
     })();
+    // =========================================================================
+    // SMART ITEM NAME ANALYZER, PERMISSION-BASED BULK REPLACER & FUZZY PASSBOOK
+    // =========================================================================
+    (function setupSmartNameMergerAndPassbook() {
+      // 1. Inject Modal & Top Button into DOM automatically
+      const modalHtml = `
+        <div id="nameMergerModal" style="z-index: 9990;" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-2.5 no-print">
+          <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full p-4 space-y-3 text-xs shadow-2xl max-h-[92vh] flex flex-col justify-between border border-orange-300 dark:border-slate-700">
+            <div class="flex flex-wrap justify-between items-center gap-2 border-b dark:border-slate-800 pb-2.5">
+              <div>
+                <h3 class="font-bold text-sm md:text-base text-orange-700 dark:text-amber-400">
+                  <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>195 ऑर्डर्स स्मार्ट नाम डिटेक्टर एवं बल्क रिप्लेसर (Permission Center)
+                </h3>
+                <p class="text-[11px] text-slate-500">
+                  यहाँ आपके 195 बिलों में मिले सभी अलग-अलग या मिलते-जुलते नामों की लिस्ट है। अपनी अनुमति से टिक (☑️) करें और चुनें कि किसे किस नाम से रिप्लेस करना है:
+                </p>
+              </div>
+              <button onclick="document.getElementById('nameMergerModal').classList.add('hidden')" class="text-red-600 font-bold text-base px-2">✕</button>
+            </div>
+
+            <!-- Quick 1-Click Preset Actions requested in Video -->
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-amber-50 dark:bg-slate-800 p-2.5 rounded-xl border border-amber-200 dark:border-slate-700">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="font-bold text-amber-900 dark:text-amber-300">⚡ त्वरित प्रीसेट:</span>
+                <button type="button" onclick="applyMurtiToPratimaPreset()" class="bg-orange-600 hover:bg-orange-700 text-white px-2.5 py-1 rounded-lg font-bold shadow-xs">
+                  🕉️ सभी 'मूर्ति' को 'प्रतिमा' बनाएं (#49-#55)
+                </button>
+                <button type="button" onclick="applyDhoopConePreset()" class="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1 rounded-lg font-bold shadow-xs">
+                  🔥 '#12 धूप स्टीक (छोटा)' को 'धूप कोन (छोटा)' बनाएं
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <label class="flex items-center gap-1 font-bold cursor-pointer">
+                  <input type="checkbox" id="selectAllMergerRows" checked onchange="toggleAllMergerCheckboxes(this.checked)" class="accent-emerald-600 w-4 h-4" />
+                  <span>सभी चुनें</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Detected Variations Table -->
+            <div class="overflow-y-auto max-h-[56vh] border dark:border-slate-700 rounded-xl">
+              <table class="w-full text-xs text-left border-collapse">
+                <thead class="bg-slate-100 dark:bg-slate-800 sticky top-0 font-bold border-b dark:border-slate-700">
+                  <tr>
+                    <th class="p-2 text-center w-10">☑️</th>
+                    <th class="p-2">पुराने बिलों में मिला नाम (Old Name in Bills)</th>
+                    <th class="p-2 text-center">कितनी बार / रेट</th>
+                    <th class="p-2">कैटलॉग आइटम चुनें (Match Catalogue)</th>
+                    <th class="p-2">नया फाइनल नाम (Replace With This Name)</th>
+                  </tr>
+                </thead>
+                <tbody id="nameMergerTableBody" class="divide-y dark:divide-slate-800"></tbody>
+              </table>
+            </div>
+
+            <div class="flex flex-wrap justify-between items-center gap-2 pt-2 border-t dark:border-slate-800">
+              <label class="flex items-center gap-1.5 font-bold text-teal-800 dark:text-teal-300 cursor-pointer">
+                <input type="checkbox" id="alsoUpdateCatalogueNamesChk" checked class="accent-teal-600 w-4 h-4" />
+                <span>यदि आपने नया नाम बदला है (जैसे 'प्रतिमा' या 'धूप कोन'), तो उसे मुख्य 57 कैटलॉग में भी अपडेट करें</span>
+              </label>
+              <div class="flex gap-2">
+                <button onclick="document.getElementById('nameMergerModal').classList.add('hidden')" class="bg-slate-200 dark:bg-slate-800 px-3 py-2 rounded-xl font-bold">रद्द करें</button>
+                <button onclick="executeApprovedBulkReplacements()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow-lg flex items-center gap-1.5">
+                  <i class="fa-solid fa-check-double"></i> <span>मेरी अनुमति से पूरे 195 बिल, कैटलॉग व Google Sheet में रिप्लेस करें</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+      // Add quick button to Top Control Strip & Left Drawer
+      const topStrip = document.querySelector("#sanDealTopControlStrip > div > div");
+      if (topStrip) {
+        topStrip.insertAdjacentHTML("beforeend", `
+          <button onclick="openSmartNameMergerModal()" class="bg-purple-50 dark:bg-slate-800 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> <span>नाम मिलान/रिप्लेस</span>
+          </button>
+        `);
+      }
+      const adminDrawer = document.getElementById("drawerAdminSection");
+      if (adminDrawer) {
+        adminDrawer.insertAdjacentHTML("afterbegin", `
+          <button onclick="openSmartNameMergerModal();closeLeftDrawer();" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-purple-50 dark:bg-slate-800 hover:bg-purple-100 text-left font-bold text-purple-800 dark:text-purple-300">
+            <i class="fa-solid fa-wand-magic-sparkles text-purple-600 w-4"></i> <span>🔄 195 ऑर्डर्स नाम मिलान व रिप्लेस</span>
+          </button>
+        `);
+      }
+
+      // 2. Smart Normalization & Auto-Detector Logic
+      window.cleanKeyForMatch = function(str) {
+        return String(str || "")
+          .toLowerCase()
+          .replace(/[\(\)\-\_\.\,\/]/g, " ")
+          .replace(/\s+/g, " ")
+          .replace(/शैम्पू/g, "शैंपू")
+          .replace(/भस्म/g, "भष्म")
+          .replace(/स्टीक/g, "स्टिक")
+          .replace(/प्रतिमा/g, "मूर्ति")
+          .replace(/रू\s*वाली/g, "वाली")
+          .replace(/ह्रीं\b/g, "ह्रींग")
+          .trim();
+      };
+
+      window.findBestCatalogueMatch = function(rawName, rawRate) {
+        const name = String(rawName || "").trim();
+        const rate = Number(rawRate) || 0;
+        const lower = name.toLowerCase();
+        const norm = cleanKeyForMatch(name);
+
+        // Exact match first
+        let exact = masterItems.find(m => m.name.trim() === name);
+        if (exact) return { item: exact, isExact: true };
+
+        // Normalized exact match (fixes spacing like 'गाऊन (पीला)' vs 'गाऊन ( पीला )', 'भस्म' vs 'भष्म')
+        let normMatch = masterItems.find(m => cleanKeyForMatch(m.name) === norm);
+        if (normMatch) return { item: normMatch, isExact: false };
+
+        // Special Case 1: Shampoo (Rate 300 -> Adult #25, Rate 200 or 'small' -> Baby #26)
+        if (lower.includes("shampoo") || lower.includes("शैम्पू") || lower.includes("शैंपू")) {
+          if (lower.includes("small") || lower.includes("छोट") || lower.includes("बच्च") || rate === 200) {
+            return { item: masterItems.find(m => String(m.code) === "26") || masterItems[25], isExact: false };
+          }
+          return { item: masterItems.find(m => String(m.code) === "25") || masterItems[24], isExact: false };
+        }
+
+        // Special Case 2: Dhoop Stick / Cone (Rate 50 or 'छोटा' or 'cone'/'कोन' -> #12, Rate 80 -> #11)
+        if (lower.includes("धूप") || lower.includes("dhoop") || lower.includes("कोन") || lower.includes("cone")) {
+          if (!lower.includes("धूनी") && !lower.includes("dhuni")) {
+            if (lower.includes("छोट") || lower.includes("कोन") || lower.includes("cone") || rate === 50) {
+              return { item: masterItems.find(m => String(m.code) === "12"), isExact: false };
+            }
+            if (lower.includes("बड़") || rate === 80) {
+              return { item: masterItems.find(m => String(m.code) === "11"), isExact: false };
+            }
+          }
+        }
+
+        // Special Case 3:Prabhu Kripa Patrika with month suffix like 'प्रभु कृपा पत्रिका (August)'
+        if (lower.includes("प्रभु कृपा पत्रिका") || lower.includes("patrika")) {
+          return { item: masterItems.find(m => String(m.code) === "14"), isExact: false };
+        }
+
+        // Special Case 4: DSS Cover / Velvet Cover (#10) & Beej Mantra Cover (#9)
+        if (lower.includes("dss") || lower.includes("लाल कवर") || lower.includes("velvet")) {
+          return { item: masterItems.find(m => String(m.code) === "10"), isExact: false };
+        }
+        if (lower.includes("बीज मंत्र कवर")) {
+          return { item: masterItems.find(m => String(m.code) === "9"), isExact: false };
+        }
+
+        // Special Case 5: Ood Mishrit Dhuni 500 vs 1000
+        if (lower.includes("ऊद") || lower.includes("ood")) {
+          if (lower.includes("500") || rate === 500) return { item: masterItems.find(m => String(m.code) === "21"), isExact: false };
+          if (lower.includes("1000") || rate === 1000) return { item: masterItems.find(m => String(m.code) === "22"), isExact: false };
+        }
+
+        // Special Case 6: Locket Hreeng (#39) vs Guruji Locket (#38)
+        if (lower.includes("लॉकेट") || lower.includes("locket")) {
+          if (lower.includes("ह्रीं") || rate === 100) return { item: masterItems.find(m => String(m.code) === "39"), isExact: false };
+          if (rate === 40) return { item: masterItems.find(m => String(m.code) === "38"), isExact: false };
+        }
+
+        // Special Case 7: Murti / Pratima (#49 - #55)
+        if (lower.includes("मूर्ति") || lower.includes("प्रतिमा")) {
+          if (lower.includes("लक्ष्मी")) return { item: masterItems.find(m => String(m.code) === "50"), isExact: false };
+          if (lower.includes("गणेश")) return { item: masterItems.find(m => String(m.code) === "49"), isExact: false };
+          if (lower.includes("दुर्गा")) return { item: masterItems.find(m => String(m.code) === "51"), isExact: false };
+          if (lower.includes("गंगा")) return { item: masterItems.find(m => String(m.code) === "52"), isExact: false };
+          if (lower.includes("हनुमान") && (lower.includes("छोट") || lower.includes("small"))) return { item: masterItems.find(m => String(m.code) === "53"), isExact: false };
+          if (lower.includes("हनुमान")) return { item: masterItems.find(m => String(m.code) === "54"), isExact: false };
+          if (lower.includes("राधा")) return { item: masterItems.find(m => String(m.code) === "55"), isExact: false };
+        }
+
+        // Fallback: Partial token + Rate match
+        const byRateAndWord = masterItems.find(m => {
+          if (rate > 0 && Number(m.rate) !== rate) return false;
+          const mWords = cleanKeyForMatch(m.name).split(" ").filter(w => w.length > 2);
+          return mWords.some(w => norm.includes(w) || lower.includes(w));
+        });
+        if (byRateAndWord) return { item: byRateAndWord, isExact: false };
+
+        return { item: null, isExact: false };
+      };
+
+      // 3. Upgrade Passbook immediately so it matches all variations & aliases even before bulk replacement!
+      window.renderItemPassbookDetails = function() {
+        const selectedName = document.getElementById("passbookItemSelect").value;
+        const targetMaster = masterItems.find(m => m.name.trim() === selectedName.trim());
+        const showFin = canCurrentUser("showFinancials");
+        let totalQty = 0;
+        let totalSpent = 0;
+        let orderOccurrences = [];
+
+        historyLogs.forEach(r => {
+          (r.items || []).forEach(it => {
+            if (!it.name) return;
+            let isMatch = (it.name.trim() === selectedName.trim());
+            if (!isMatch && targetMaster) {
+              const matched = findBestCatalogueMatch(it.name, it.rate);
+              if (matched.item && String(matched.item.code) === String(targetMaster.code)) {
+                isMatch = true;
+              }
+            }
+            if (isMatch) {
+              const q = Number(it.qty) || 0;
+              const amt = q * (Number(it.rate) || 0);
+              totalQty += q;
+              totalSpent += amt;
+              orderOccurrences.push({
+                date: r.date,
+                id: r.id,
+                rawNameInBill: it.name.trim(),
+                qty: q,
+                rate: it.rate,
+                amt: amt
+              });
+            }
+          });
+        });
+
+        document.getElementById("passbookSummaryStats").innerHTML = `
+          <div class="bg-teal-50 dark:bg-slate-800 border border-teal-200 p-2.5 rounded-xl">
+            <div class="text-[10px] text-slate-500 font-bold">कुल कितनी बार मंगाया</div>
+            <div class="text-base font-bold text-teal-700 dark:text-teal-400">${orderOccurrences.length} बार</div>
+          </div>
+          <div class="bg-amber-50 dark:bg-slate-800 border border-amber-200 p-2.5 rounded-xl">
+            <div class="text-[10px] text-slate-500 font-bold">कुल मंगाई गई मात्रा</div>
+            <div class="text-base font-bold text-orange-700 dark:text-amber-400">${totalQty} Pcs</div>
+          </div>
+          <div class="bg-emerald-50 dark:bg-slate-800 border border-emerald-200 p-2.5 rounded-xl">
+            <div class="text-[10px] text-slate-500 font-bold">कुल सेवा राशि</div>
+            <div class="text-base font-bold text-emerald-700 dark:text-emerald-400">${showFin ? "₹" + totalSpent.toLocaleString("en-IN") : "🔒 Hidden"}</div>
+          </div>
+        `;
+
+        const tbody = document.getElementById("passbookHistoryRows");
+        if (orderOccurrences.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">इस सामग्री का कोई पुराना रिकॉर्ड नहीं मिला।</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = orderOccurrences.map(o => {
+          const aliasHint = o.rawNameInBill !== selectedName.trim()
+            ? ` <span class="text-[10px] bg-amber-100 dark:bg-slate-700 text-amber-900 dark:text-amber-300 px-1.5 py-0.5 rounded font-semibold">(${o.rawNameInBill})</span>`
+            : "";
+          return `
+            <tr>
+              <td class="p-2 font-bold text-orange-700 dark:text-amber-400">${formatDDMMMYYYY(o.date)}</td>
+              <td class="p-2 text-slate-600 dark:text-slate-300 font-semibold">${o.id}${aliasHint}</td>
+              <td class="p-2 text-center font-bold">${o.qty} pcs</td>
+              <td class="p-2 text-right font-bold">${showFin ? "₹" + o.amt.toLocaleString("en-IN") : "-"}</td>
+            </tr>
+          `;
+        }).join("");
+      };
+
+      // 4. Open Smart Name Merger Modal & Scan all 195+ Bills
+      let detectedMergerRows = [];
+
+      window.openSmartNameMergerModal = function() {
+        const usageMap = {}; // key: rawName -> { rawName, count, sampleRate, matchedCode, targetName, isVariation }
+
+        // Scan all items & pendingItems across all 195+ bills
+        historyLogs.forEach(r => {
+          (r.items || []).forEach(it => {
+            const raw = String(it.name || "").trim();
+            if (!raw) return;
+            if (!usageMap[raw]) {
+              const m = findBestCatalogueMatch(raw, it.rate);
+              const matchedItem = m.item;
+              usageMap[raw] = {
+                rawName: raw,
+                count: 0,
+                sampleRate: it.rate || (matchedItem ? matchedItem.rate : 0),
+                matchedCode: matchedItem ? String(matchedItem.code) : "",
+                targetName: matchedItem ? matchedItem.name : raw,
+                isExactCatalogueMatch: !!m.isExact
+              };
+            }
+            usageMap[raw].count += 1;
+          });
+
+          (r.pendingItems || []).forEach(p => {
+            const raw = String(p.name || "").trim();
+            if (!raw) return;
+            if (!usageMap[raw]) {
+              const m = findBestCatalogueMatch(raw, 0);
+              const matchedItem = m.item;
+              usageMap[raw] = {
+                rawName: raw,
+                count: 0,
+                sampleRate: matchedItem ? matchedItem.rate : 0,
+                matchedCode: matchedItem ? String(matchedItem.code) : "",
+                targetName: matchedItem ? matchedItem.name : raw,
+                isExactCatalogueMatch: !!m.isExact
+              };
+            }
+            usageMap[raw].count += 1;
+          });
+        });
+
+        // Also include Murti items (#49-#55) and Dhoop Stick Small (#12) so user can rename them even if exact
+        masterItems.forEach(m => {
+          if ((Number(m.code) >= 49 && Number(m.code) <= 55) || Number(m.code) === 12) {
+            if (!usageMap[m.name]) {
+              usageMap[m.name] = {
+                rawName: m.name,
+                count: 0,
+                sampleRate: m.rate,
+                matchedCode: String(m.code),
+                targetName: m.name,
+                isExactCatalogueMatch: true
+              };
+            }
+          }
+        });
+
+        // Sort: non-exact variations first, then Murti/Dhoop items, then by count
+        detectedMergerRows = Object.values(usageMap).sort((a, b) => {
+          if (a.isExactCatalogueMatch !== b.isExactCatalogueMatch) return a.isExactCatalogueMatch ? 1 : -1;
+          return b.count - a.count;
+        });
+
+        renderNameMergerTable();
+        const modal = document.getElementById("nameMergerModal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        pushModalHistoryState();
+      };
+
+      window.renderNameMergerTable = function() {
+        const tbody = document.getElementById("nameMergerTableBody");
+        if (!tbody) return;
+
+        tbody.innerHTML = detectedMergerRows.map((row, idx) => {
+          const isDiff = row.rawName.trim() !== row.targetName.trim() || !row.isExactCatalogueMatch;
+          const badgeHtml = isDiff
+            ? `<span class="bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded text-[10px] font-bold">🔄 बदलाव सुझाये गए</span>`
+            : `<span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded text-[10px] font-bold">✅ कैटलॉग से मैच</span>`;
+
+          const catOptions = `<option value="">-- कस्टम नाम रखें --</option>` + masterItems.map(m =>
+            `<option value="${m.code}" ${String(m.code) === String(row.matchedCode) ? "selected" : ""}>#${m.code} ${m.name} (₹${m.rate})</option>`
+          ).join("");
+
+          return `
+            <tr class="${isDiff ? 'bg-amber-50/50 dark:bg-slate-800/80' : ''}">
+              <td class="p-2 text-center">
+                <input type="checkbox" id="mergerChk_${idx}" ${isDiff ? "checked" : ""} class="accent-emerald-600 w-4 h-4 cursor-pointer" />
+              </td>
+              <td class="p-2">
+                <div class="font-bold text-slate-900 dark:text-white">${row.rawName}</div>
+                <div class="mt-0.5">${badgeHtml}</div>
+              </td>
+              <td class="p-2 text-center font-bold">
+                <span class="text-orange-700 dark:text-amber-400">${row.count} बार</span>
+                ${row.sampleRate ? `<div class="text-[10px] text-slate-400">₹${row.sampleRate}</div>` : ""}
+              </td>
+              <td class="p-2">
+                <select onchange="onMergerCatalogueSelect(${idx}, this.value)" class="w-full border dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-900 font-bold text-[11px]">
+                  ${catOptions}
+                </select>
+              </td>
+              <td class="p-2">
+                <input type="text" id="mergerTargetInput_${idx}" value="${row.targetName}" oninput="detectedMergerRows[${idx}].targetName = this.value; document.getElementById('mergerChk_${idx}').checked = true;" class="w-full border border-emerald-500 rounded-lg px-2.5 py-1.5 bg-emerald-50/40 dark:bg-slate-900 font-bold text-emerald-900 dark:text-emerald-300" />
+              </td>
+            </tr>
+          `;
+        }).join("");
+      };
+
+      window.onMergerCatalogueSelect = function(rowIdx, selectedCode) {
+        const m = masterItems.find(x => String(x.code) === String(selectedCode));
+        if (m) {
+          detectedMergerRows[rowIdx].matchedCode = String(m.code);
+          detectedMergerRows[rowIdx].targetName = m.name;
+          const inp = document.getElementById(`mergerTargetInput_${rowIdx}`);
+          if (inp) inp.value = m.name;
+          const chk = document.getElementById(`mergerChk_${rowIdx}`);
+          if (chk) chk.checked = true;
+        }
+      };
+
+      window.toggleAllMergerCheckboxes = function(checked) {
+        detectedMergerRows.forEach((_, idx) => {
+          const chk = document.getElementById(`mergerChk_${idx}`);
+          if (chk) chk.checked = checked;
+        });
+      };
+
+      // Preset 1: Convert all 'मूर्ति' (#49-#55) to 'प्रतिमा' in one click!
+      window.applyMurtiToPratimaPreset = function() {
+        detectedMergerRows.forEach((row, idx) => {
+          if (row.rawName.includes("मूर्ति") || (Number(row.matchedCode) >= 49 && Number(row.matchedCode) <= 55)) {
+            const newPratimaName = row.targetName.replace(/मूर्ति/g, "प्रतिमा");
+            row.targetName = newPratimaName;
+            const inp = document.getElementById(`mergerTargetInput_${idx}`);
+            if (inp) inp.value = newPratimaName;
+            const chk = document.getElementById(`mergerChk_${idx}`);
+            if (chk) chk.checked = true;
+          }
+        });
+      };
+
+      // Preset 2: Convert '#12 धूप स्टीक ( छोटा )' to 'धूप कोन ( छोटा )'
+      window.applyDhoopConePreset = function() {
+        detectedMergerRows.forEach((row, idx) => {
+          if (String(row.matchedCode) === "12") {
+            const coneName = "धूप कोन ( छोटा )";
+            row.targetName = coneName;
+            const inp = document.getElementById(`mergerTargetInput_${idx}`);
+            if (inp) inp.value = coneName;
+            const chk = document.getElementById(`mergerChk_${idx}`);
+            if (chk) chk.checked = true;
+          }
+        });
+      };
+
+      // 5. Execute Bulk Replacement across Local Storage, Catalogue & Google Sheet Backend!
+      window.executeApprovedBulkReplacements = function() {
+        const repMap = {};
+        const catUpdates = [];
+        const updateCatToo = document.getElementById("alsoUpdateCatalogueNamesChk")?.checked;
+
+        detectedMergerRows.forEach((row, idx) => {
+          const chk = document.getElementById(`mergerChk_${idx}`);
+          const inp = document.getElementById(`mergerTargetInput_${idx}`);
+          const finalName = (inp ? inp.value : row.targetName).trim();
+          if (chk && chk.checked && finalName) {
+            repMap[row.rawName.trim()] = finalName;
+            if (updateCatToo && row.matchedCode) {
+              const catItem = masterItems.find(m => String(m.code) === String(row.matchedCode));
+              if (catItem && catItem.name.trim() !== finalName) {
+                repMap[catItem.name.trim()] = finalName;
+                catItem.name = finalName;
+                catUpdates.push({ code: catItem.code, newName: finalName });
+              }
+            }
+          }
+        });
+
+        const keysCount = Object.keys(repMap).length;
+        if (keysCount === 0) {
+          alert("कृपया कम से कम एक नाम के आगे टिक (☑️) लगाएं!");
+          return;
+        }
+
+        pushUndoState("Bulk Item Name Replacement");
+
+        // Replace across all 195+ historyLogs
+        let changedBills = 0;
+        historyLogs.forEach(r => {
+          let billModified = false;
+          (r.items || []).forEach(it => {
+            const clean = String(it.name || "").trim();
+            if (repMap[clean] && repMap[clean] !== clean) {
+              it.name = repMap[clean];
+              billModified = true;
+            }
+          });
+          (r.pendingItems || []).forEach(p => {
+            const cleanP = String(p.name || "").trim();
+            if (repMap[cleanP] && repMap[cleanP] !== cleanP) {
+              p.name = repMap[cleanP];
+              billModified = true;
+            }
+          });
+          if (billModified) changedBills++;
+        });
+
+        // Also update currentBill & customShortcuts if needed
+        (currentBill.items || []).forEach(it => {
+          const clean = String(it.name || "").trim();
+          if (repMap[clean]) it.name = repMap[clean];
+        });
+        (currentBill.pendingItems || []).forEach(p => {
+          const cleanP = String(p.name || "").trim();
+          if (repMap[cleanP]) p.name = repMap[cleanP];
+        });
+        customShortcuts.forEach(s => {
+          const catItem = masterItems.find(m => String(m.code) === String(s.code));
+          if (catItem) s.name = catItem.name;
+        });
+
+        localStorage.setItem("pd_master_v10", JSON.stringify(masterItems));
+        localStorage.setItem("pd_history_v10", JSON.stringify(historyLogs));
+        localStorage.setItem("pd_shortcuts_v10", JSON.stringify(customShortcuts));
+
+        renderPublicCatalogue();
+        renderCustomShortcuts();
+        renderHistoryLogs();
+        updateA4Preview();
+        refreshKpiSummaryCards();
+        document.getElementById("nameMergerModal").classList.add("hidden");
+
+        recordActivity(`🔄 बल्क नाम रिप्लेसमेंट: ${keysCount} नाम नियम लागू, ${changedBills} पुराने बिल व ${catUpdates.length} कैटलॉग आइटम अपडेट किए गए`);
+
+        if (APP_CONFIG.GAS_WEB_APP_URL) {
+          fetch(APP_CONFIG.GAS_WEB_APP_URL, {
+            method: "POST",
+            mode: "no-cors",
+            body: JSON.stringify({
+              action: "bulkReplaceItemNames",
+              pin: "5616",
+              replacements: repMap,
+              catalogueUpdates: catUpdates
+            })
+          });
+        }
+
+        alert(`✅ आपकी अनुमति से बदलाव पूरे हो गए!\n• प्रभावित पुराने बिल: ${changedBills} बिल\n• कैटलॉग नाम अपडेट: ${catUpdates.length} आइटम्स\n• Google Sheet के सभी 195+ रिकॉर्ड्स में भी सिंक कमांड भेज दिया गया है!`);
+      };
+    })();
 
   </script>
 </body>
