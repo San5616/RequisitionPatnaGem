@@ -5299,6 +5299,257 @@
       }
       alert(`✅ सभी ${Object.keys(persistentReplaceMap).length} सेव किए गए नाम नियम 195 बिलों पर लागू कर दिए गए हैं! (${count} बिल अपडेट हुए)`);
     }
+        // =========================================================================
+    // 📖 v17.0 SPECIAL PRABHU KRIPA PATRIKA MODULE
+    // - Auto Next-Month Bracket Name: e.g., 'प्रभु कृपा पत्रिका (दिसंबर)'
+    // - Split Qty Display on A4: '90 + 15' (Paid Qty + Free VIP Seva Qty)
+    // - Remarks Calculation: Multiplies ONLY Paid Qty (90 x 50 = 4500)
+    // - 1-Click Auto-Fill CM House / Governor / Ministers Seva Note
+    // =========================================================================
+    (function enableSpecialPatrikaConfigurator() {
+      const HINDI_MONTHS = [
+        "जनवरी", "फरवरी", "मार्च", "अप्रैल", "मई", "जून",
+        "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"
+      ];
+
+      function getNextHindiMonthFromBillDate(dateStr) {
+        const iso = typeof normalizeToISODate === "function" ? normalizeToISODate(dateStr) : new Date().toISOString().slice(0, 10);
+        const mNum = parseInt(iso.split("-")[1], 10) || (new Date().getMonth() + 1);
+        // Next month index (0-11)
+        const nextIdx = mNum % 12;
+        return HINDI_MONTHS[nextIdx] || "दिसंबर";
+      }
+
+      function buildDefaultPatrikaSevaNote(extraQty) {
+        const ex = Number(extraQty) || 15;
+        return `प्रार्थना:- 5 पत्रिका बिहार मुख्यमंत्री आवास पर, 3 पत्रिका बिहार के वर्तमान राज्यपाल (श्री राजेंद्र आर्लेकर जी) के पास व 5 पत्रिका कृषि मंत्री (मंगल पांडे जी) व स्वास्थ्य एवं विधि मंत्री (विजय कुमार चौधरी जी) व गृह सचिव व महाधिवक्ता एवं पटना हाई कोर्ट के जज एवं कमिश्नर व एक अन्य विशिष्ट व्यक्ति व पूर्व राज्यपाल श्री फागू चौहान जी को प्रचारार्थ (2 पत्रिका)। अतः ${ex} पत्रिका अतिरिक्त भेजने की कृपा करें।`;
+      }
+
+      // 1. Inject Patrika Special Config Box inside Builder (Right below Item Add Table)
+      function injectPatrikaBuilderUI() {
+        const tableWrap = document.getElementById("builderTableBody")?.closest(".max-h-40");
+        if (!tableWrap || document.getElementById("patrikaSpecialConfigBox")) return;
+
+        const boxHtml = `
+          <div id="patrikaSpecialConfigBox" class="hidden mt-2 bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 dark:from-slate-800 dark:to-slate-900 border-2 border-orange-400 dark:border-orange-600 rounded-xl p-2.5 space-y-2 text-xs shadow-sm">
+            <div class="flex justify-between items-center border-b border-orange-200 dark:border-slate-700 pb-1">
+              <span class="font-extrabold text-orange-800 dark:text-amber-300 flex items-center gap-1">
+                <i class="fa-solid fa-book-open-reader"></i>
+                <span>📖 प्रभु कृपा पत्रिका विशेष सेटिंग (माह + अतिरिक्त सेवा प्रतियाँ)</span>
+              </span>
+              <span class="bg-orange-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold">सिर्फ Paid Qty का गुणा होगा</span>
+            </div>
+
+            <div class="grid grid-cols-12 gap-2 items-end">
+              <div class="col-span-4">
+                <label class="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-0.5">📅 पत्रिका का माह:</label>
+                <select id="patrikaMonthSelect" onchange="applyPatrikaSpecialSettings(false)" class="w-full border border-orange-400 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-900 font-bold text-xs">
+                  ${HINDI_MONTHS.map(m => `<option value="${m}">${m}</option>`).join("")}
+                </select>
+              </div>
+
+              <div class="col-span-4">
+                <label class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">💰 भुगतान Qty (Paid):</label>
+                <input type="number" id="patrikaPaidQtyInput" min="1" value="90" oninput="applyPatrikaSpecialSettings(false)" class="w-full border-2 border-emerald-500 rounded-lg px-2 py-1 text-center font-extrabold bg-white dark:bg-slate-900 text-sm" />
+              </div>
+
+              <div class="col-span-4">
+                <label class="text-[10px] font-bold text-blue-700 dark:text-blue-400 block mb-0.5">➕ अतिरिक्त सेवा Qty (Free):</label>
+                <input type="number" id="patrikaExtraQtyInput" min="0" value="15" oninput="applyPatrikaSpecialSettings(false)" class="w-full border-2 border-blue-500 rounded-lg px-2 py-1 text-center font-extrabold bg-white dark:bg-slate-900 text-sm" />
+              </div>
+            </div>
+
+            <div class="flex flex-wrap justify-between items-center gap-2 pt-1">
+              <div id="patrikaLivePreviewBadge" class="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                छपेगा: <b>प्रभु कृपा पत्रिका (दिसंबर)</b> | Qty: <b>90 + 15</b> | राशि: <b>₹4500</b>
+              </div>
+              <button type="button" onclick="insertPatrikaSevaNoteIntoBill()" class="bg-orange-600 hover:bg-orange-700 text-white px-2.5 py-1 rounded-lg font-bold text-[10.5px] shadow-xs">
+                📝 मुख्यमंत्री/विशिष्ट सेवा नोट जोड़ें
+              </button>
+            </div>
+          </div>
+        `;
+        tableWrap.insertAdjacentHTML("afterend", boxHtml);
+      }
+
+      // Helper to check if an item is Prabhu Kripa Patrika
+      window.isPatrikaItem = function(it) {
+        if (!it) return false;
+        const n = String(it.name || "").toLowerCase();
+        return String(it.code) === "14" || n.includes("प्रभु कृपा पत्रिका") || n.includes("patrika");
+      };
+
+      // Parse existing Patrika item if already in bill (e.g. "प्रभु कृपा पत्रिका (अक्टूबर)" or qtyDisplay "90 + 15")
+      function syncPatrikaConfigFromCurrentBill() {
+        injectPatrikaBuilderUI();
+        const box = document.getElementById("patrikaSpecialConfigBox");
+        if (!box) return;
+
+        const patItem = (currentBill.items || []).find(it => isPatrikaItem(it));
+        if (!patItem) {
+          box.classList.add("hidden");
+          return;
+        }
+
+        box.classList.remove("hidden");
+
+        // Extract month if present in brackets, else default to next month of bill date
+        const mMatch = String(patItem.name || "").match(/\(\s*([^\)]+)\s*\)/);
+        const defaultNextMonth = getNextHindiMonthFromBillDate(currentBill.date);
+        const chosenMonth = patItem.patrikaMonth || (mMatch && HINDI_MONTHS.includes(mMatch[1].trim()) ? mMatch[1].trim() : defaultNextMonth);
+
+        const paidQty = Number(patItem.qty) || 90;
+        const extraQty = patItem.extraFreeQty !== undefined ? Number(patItem.extraFreeQty) : 15;
+
+        // Ensure item properties are standardized
+        patItem.patrikaMonth = chosenMonth;
+        patItem.extraFreeQty = extraQty;
+        patItem.name = `प्रभु कृपा पत्रिका (${chosenMonth})`;
+        patItem.qtyDisplay = extraQty > 0 ? `${paidQty} + ${extraQty}` : `${paidQty}`;
+
+        const mSel = document.getElementById("patrikaMonthSelect");
+        const pIn = document.getElementById("patrikaPaidQtyInput");
+        const eIn = document.getElementById("patrikaExtraQtyInput");
+
+        if (mSel && document.activeElement !== mSel) mSel.value = chosenMonth;
+        if (pIn && document.activeElement !== pIn) pIn.value = paidQty;
+        if (eIn && document.activeElement !== eIn) eIn.value = extraQty;
+
+        const badge = document.getElementById("patrikaLivePreviewBadge");
+        if (badge) {
+          badge.innerHTML = `छपेगा: <b class="text-orange-700 dark:text-amber-300">${patItem.name}</b> | Qty: <b class="text-blue-700 dark:text-blue-300">${patItem.qtyDisplay}</b> | राशि: <b class="text-emerald-700 dark:text-emerald-400">₹${paidQty * (Number(patItem.rate) || 50)}</b>`;
+        }
+      }
+
+      window.applyPatrikaSpecialSettings = function(autoAddNote) {
+        const patItem = (currentBill.items || []).find(it => isPatrikaItem(it));
+        if (!patItem) return;
+
+        const chosenMonth = document.getElementById("patrikaMonthSelect")?.value || getNextHindiMonthFromBillDate(currentBill.date);
+        const paidQty = Math.max(1, parseInt(document.getElementById("patrikaPaidQtyInput")?.value, 10) || 1);
+        const extraQty = Math.max(0, parseInt(document.getElementById("patrikaExtraQtyInput")?.value, 10) || 0);
+
+        patItem.patrikaMonth = chosenMonth;
+        patItem.qty = paidQty; // Strictly Paid Qty so Rate * Qty = 90 * 50 = 4500!
+        patItem.extraFreeQty = extraQty;
+        patItem.name = `प्रभु कृपा पत्रिका (${chosenMonth})`;
+        patItem.qtyDisplay = extraQty > 0 ? `${paidQty} + ${extraQty}` : `${paidQty}`;
+
+        if (autoAddNote && extraQty > 0) {
+          insertPatrikaSevaNoteIntoBill();
+        }
+
+        triggerAutoSave();
+        updateA4Preview();
+      };
+
+      window.insertPatrikaSevaNoteIntoBill = function() {
+        const patItem = (currentBill.items || []).find(it => isPatrikaItem(it));
+        const extraQty = patItem && patItem.extraFreeQty !== undefined ? Number(patItem.extraFreeQty) : (parseInt(document.getElementById("patrikaExtraQtyInput")?.value, 10) || 15);
+        const newNote = buildDefaultPatrikaSevaNote(extraQty);
+        const noteIn = document.getElementById("specialNoteInput");
+        if (noteIn) {
+          // Replace old patrika prayer note if present, or set it
+          if (!noteIn.value.trim() || noteIn.value.includes("मुख्यमंत्री आवास पर")) {
+            noteIn.value = newNote;
+          } else {
+            noteIn.value = noteIn.value.trim() + " | " + newNote;
+          }
+          currentBill.specialNote = noteIn.value;
+          triggerAutoSave();
+          updateA4Preview();
+        }
+      };
+
+      // 2. Intercept addSelectedItemToBill & tapCustomShortcut so adding #14 Patrika auto-sets Next Month & +15 Extra!
+      const origAddSelected = window.addSelectedItemToBill;
+      window.addSelectedItemToBill = function() {
+        const rawQtyStr = String(document.getElementById("selectedItemQty")?.value || "1").trim();
+        const rawNameStr = String(document.getElementById("selectedItemName")?.value || document.getElementById("itemLookupInput")?.value || "").trim();
+        const isPat = (pickedItem && String(pickedItem.code) === "14") || rawNameStr.includes("प्रभु कृपा पत्रिका") || rawNameStr.toLowerCase().includes("patrika");
+
+        // Check if user typed "90+15" directly in Qty box for Patrika!
+        let typedPaid = null, typedExtra = null;
+        if (isPat && /^\d+\s*\+\s*\d+$/.test(rawQtyStr)) {
+          const parts = rawQtyStr.split("+").map(s => parseInt(s.trim(), 10));
+          typedPaid = parts[0];
+          typedExtra = parts[1];
+          document.getElementById("selectedItemQty").value = String(typedPaid);
+        }
+
+        if (typeof origAddSelected === "function") origAddSelected();
+
+        if (isPat) {
+          const patItem = (currentBill.items || []).find(it => isPatrikaItem(it));
+          if (patItem) {
+            const nextM = getNextHindiMonthFromBillDate(currentBill.date);
+            patItem.code = "14";
+            patItem.patrikaMonth = patItem.patrikaMonth || nextM;
+            if (typedPaid !== null) patItem.qty = typedPaid;
+            patItem.extraFreeQty = typedExtra !== null ? typedExtra : (patItem.extraFreeQty !== undefined ? patItem.extraFreeQty : 15);
+            patItem.name = `प्रभु कृपा पत्रिका (${patItem.patrikaMonth})`;
+            patItem.qtyDisplay = patItem.extraFreeQty > 0 ? `${patItem.qty} + ${patItem.extraFreeQty}` : `${patItem.qty}`;
+
+            // Auto-fill the CM House / VIP Seva Note if note is empty
+            const noteIn = document.getElementById("specialNoteInput");
+            if (noteIn && !noteIn.value.trim() && patItem.extraFreeQty > 0) {
+              noteIn.value = buildDefaultPatrikaSevaNote(patItem.extraFreeQty);
+              currentBill.specialNote = noteIn.value;
+            }
+            triggerAutoSave();
+            updateA4Preview();
+          }
+        }
+      };
+
+      // 3. Hook into updateA4Preview so the A4 Table & Builder Table show '90 + 15' in Qty while Remarks shows '4500' (90 * 50)!
+      const origUpdateA4Patrika = window.updateA4Preview;
+      window.updateA4Preview = function() {
+        // Ensure any Patrika item has its qtyDisplay synced before rendering
+        (currentBill.items || []).forEach(it => {
+          if (isPatrikaItem(it)) {
+            const mMatch = String(it.name || "").match(/\(\s*([^\)]+)\s*\)/);
+            const mon = it.patrikaMonth || (mMatch ? mMatch[1].trim() : getNextHindiMonthFromBillDate(currentBill.date));
+            const exQ = it.extraFreeQty !== undefined ? Number(it.extraFreeQty) : 0;
+            it.patrikaMonth = mon;
+            it.name = `प्रभु कृपा पत्रिका (${mon})`;
+            it.qtyDisplay = exQ > 0 ? `${it.qty} + ${exQ}` : `${it.qty}`;
+          }
+        });
+
+        if (typeof origUpdateA4Patrika === "function") origUpdateA4Patrika();
+
+        syncPatrikaConfigFromCurrentBill();
+
+        // Patch the A4 Table Qty cell & Builder Row for Patrika so it displays '90 + 15' while keeping Remarks = 4500!
+        const a4Rows = document.querySelectorAll("#a4ItemsBody tr");
+        const bRows = document.querySelectorAll("#builderTableBody tr");
+
+        (currentBill.items || []).forEach((it, idx) => {
+          if (isPatrikaItem(it) && Number(it.extraFreeQty) > 0) {
+            const disp = `${it.qty} + ${it.extraFreeQty}`;
+            if (a4Rows[idx]) {
+              const cells = a4Rows[idx].querySelectorAll("td");
+              if (cells[3]) cells[3].textContent = disp; // Column 4: Qty shows '90 + 15'
+              if (cells[4]) cells[4].textContent = Number(it.rate) * Number(it.qty); // Column 5: Remarks strictly 90 * 50 = 4500
+            }
+            if (bRows[idx]) {
+              const bCells = bRows[idx].querySelectorAll("td");
+              if (bCells[3]) {
+                bCells[3].innerHTML = `<span onclick="document.getElementById('patrikaPaidQtyInput').focus()" class="cursor-pointer bg-amber-100 text-orange-900 px-1.5 py-0.5 rounded font-extrabold border border-orange-400" title="नीचे पत्रिका सेटिंग बॉक्स से बदलें">${disp}</span>`;
+              }
+            }
+          }
+        });
+      };
+
+      // Initialize on load
+      setTimeout(() => {
+        injectPatrikaBuilderUI();
+        syncPatrikaConfigFromCurrentBill();
+      }, 300);
+    })();
+
   </script>
 </body>
 </html>
