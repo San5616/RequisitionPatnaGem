@@ -5299,89 +5299,436 @@
       }
       alert(`✅ सभी ${Object.keys(persistentReplaceMap).length} सेव किए गए नाम नियम 195 बिलों पर लागू कर दिए गए हैं! (${count} बिल अपडेट हुए)`);
     }
+                        
         // =========================================================================
-    // 📖 v17.0 SPECIAL PRABHU KRIPA PATRIKA MODULE
-    // - Auto Next-Month Bracket Name: e.g., 'प्रभु कृपा पत्रिका (दिसंबर)'
-    // - Split Qty Display on A4: '90 + 15' (Paid Qty + Free VIP Seva Qty)
-    // - Remarks Calculation: Multiplies ONLY Paid Qty (90 x 50 = 4500)
-    // - 1-Click Auto-Fill CM House / Governor / Ministers Seva Note
+    // 🚀 v18.0 MASTER UPGRADE MODULE (ALL 8 VIDEO MODIFICATIONS)
+    // 1. 📋 1-57 Quick Item List Semi-Transparent Modal in Builder
+    // 2. 📖 Collapsible Prabhu Kripa Patrika Config Box + Split Qty ('90 + 15')
+    // 3. ⚙️ Editable CM House / VIP Seva Note Template in Settings
+    // 4. 💡 Collapsible Smart Balance Suggestions Dropdown
+    // 5. 📝 SanDeal-Style Resizable Multi-Line Textareas (Notes & Address)
+    // 6. 🗂️ Horizontal Sliding Previous Requisitions Carousel above A4 Preview
+    // 7. 🎛️ Collapsible / Lockable Bottom A4 Sliders Control Bar
+    // 8. 🛠️ Automatic Recovery of Missing 'प्रभु कृपा पत्रिका (90+15 / 100+15)'
+    //    across all 2020-2026 Historical Requisitions + 1-Click Sheet Sync!
     // =========================================================================
-    (function enableSpecialPatrikaConfigurator() {
+    (function enableV18CompleteVideoModifications() {
       const HINDI_MONTHS = [
         "जनवरी", "फरवरी", "मार्च", "अप्रैल", "मई", "जून",
         "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"
       ];
 
+      const DEFAULT_PATRIKA_VIP_NOTE = "प्रार्थना:- 5 पत्रिका बिहार मुख्यमंत्री आवास पर, 3 पत्रिका बिहार के वर्तमान राज्यपाल (श्री राजेंद्र आर्लेकर जी) के पास व 5 पत्रिका कृषि मंत्री (मंगल पांडे जी) व स्वास्थ्य एवं विधि मंत्री (विजय कुमार चौधरी जी) व गृह सचिव व महाधिवक्ता एवं पटना हाई कोर्ट के जज एवं कमिश्नर व एक अन्य विशिष्ट व्यक्ति व पूर्व राज्यपाल श्री फागू चौहान जी को प्रचारार्थ (2 पत्रिका)। अतः {extra} पत्रिका अतिरिक्त भेजने की कृपा करें।";
+
+      let patrikaNoteTemplate = localStorage.getItem("pd_patrika_note_template_v18") || DEFAULT_PATRIKA_VIP_NOTE;
+      let isPatrikaBoxCollapsed = false;
+      let isSmartFillerOpen = false;
+      let isA4SlidersOpen = false;
+      let isPrevCarouselOpen = true;
+
       function getNextHindiMonthFromBillDate(dateStr) {
         const iso = typeof normalizeToISODate === "function" ? normalizeToISODate(dateStr) : new Date().toISOString().slice(0, 10);
         const mNum = parseInt(iso.split("-")[1], 10) || (new Date().getMonth() + 1);
-        // Next month index (0-11)
-        const nextIdx = mNum % 12;
-        return HINDI_MONTHS[nextIdx] || "दिसंबर";
+        return HINDI_MONTHS[mNum % 12] || "दिसंबर";
       }
 
-      function buildDefaultPatrikaSevaNote(extraQty) {
+      function buildPatrikaSevaNote(extraQty) {
         const ex = Number(extraQty) || 15;
-        return `प्रार्थना:- 5 पत्रिका बिहार मुख्यमंत्री आवास पर, 3 पत्रिका बिहार के वर्तमान राज्यपाल (श्री राजेंद्र आर्लेकर जी) के पास व 5 पत्रिका कृषि मंत्री (मंगल पांडे जी) व स्वास्थ्य एवं विधि मंत्री (विजय कुमार चौधरी जी) व गृह सचिव व महाधिवक्ता एवं पटना हाई कोर्ट के जज एवं कमिश्नर व एक अन्य विशिष्ट व्यक्ति व पूर्व राज्यपाल श्री फागू चौहान जी को प्रचारार्थ (2 पत्रिका)। अतः ${ex} पत्रिका अतिरिक्त भेजने की कृपा करें।`;
+        return patrikaNoteTemplate.replace(/\{extra\}/g, ex).replace(/अतः\s*\d+\s*पत्रिका/g, `अतः ${ex} पत्रिका`);
       }
 
-      // 1. Inject Patrika Special Config Box inside Builder (Right below Item Add Table)
-      function injectPatrikaBuilderUI() {
-        const tableWrap = document.getElementById("builderTableBody")?.closest(".max-h-40");
-        if (!tableWrap || document.getElementById("patrikaSpecialConfigBox")) return;
-
-        const boxHtml = `
-          <div id="patrikaSpecialConfigBox" class="hidden mt-2 bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 dark:from-slate-800 dark:to-slate-900 border-2 border-orange-400 dark:border-orange-600 rounded-xl p-2.5 space-y-2 text-xs shadow-sm">
-            <div class="flex justify-between items-center border-b border-orange-200 dark:border-slate-700 pb-1">
-              <span class="font-extrabold text-orange-800 dark:text-amber-300 flex items-center gap-1">
-                <i class="fa-solid fa-book-open-reader"></i>
-                <span>📖 प्रभु कृपा पत्रिका विशेष सेटिंग (माह + अतिरिक्त सेवा प्रतियाँ)</span>
-              </span>
-              <span class="bg-orange-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold">सिर्फ Paid Qty का गुणा होगा</span>
-            </div>
-
-            <div class="grid grid-cols-12 gap-2 items-end">
-              <div class="col-span-4">
-                <label class="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-0.5">📅 पत्रिका का माह:</label>
-                <select id="patrikaMonthSelect" onchange="applyPatrikaSpecialSettings(false)" class="w-full border border-orange-400 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-900 font-bold text-xs">
-                  ${HINDI_MONTHS.map(m => `<option value="${m}">${m}</option>`).join("")}
-                </select>
-              </div>
-
-              <div class="col-span-4">
-                <label class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">💰 भुगतान Qty (Paid):</label>
-                <input type="number" id="patrikaPaidQtyInput" min="1" value="90" oninput="applyPatrikaSpecialSettings(false)" class="w-full border-2 border-emerald-500 rounded-lg px-2 py-1 text-center font-extrabold bg-white dark:bg-slate-900 text-sm" />
-              </div>
-
-              <div class="col-span-4">
-                <label class="text-[10px] font-bold text-blue-700 dark:text-blue-400 block mb-0.5">➕ अतिरिक्त सेवा Qty (Free):</label>
-                <input type="number" id="patrikaExtraQtyInput" min="0" value="15" oninput="applyPatrikaSpecialSettings(false)" class="w-full border-2 border-blue-500 rounded-lg px-2 py-1 text-center font-extrabold bg-white dark:bg-slate-900 text-sm" />
-              </div>
-            </div>
-
-            <div class="flex flex-wrap justify-between items-center gap-2 pt-1">
-              <div id="patrikaLivePreviewBadge" class="text-[11px] font-bold text-slate-700 dark:text-slate-200">
-                छपेगा: <b>प्रभु कृपा पत्रिका (दिसंबर)</b> | Qty: <b>90 + 15</b> | राशि: <b>₹4500</b>
-              </div>
-              <button type="button" onclick="insertPatrikaSevaNoteIntoBill()" class="bg-orange-600 hover:bg-orange-700 text-white px-2.5 py-1 rounded-lg font-bold text-[10.5px] shadow-xs">
-                📝 मुख्यमंत्री/विशिष्ट सेवा नोट जोड़ें
-              </button>
-            </div>
-          </div>
-        `;
-        tableWrap.insertAdjacentHTML("afterend", boxHtml);
-      }
-
-      // Helper to check if an item is Prabhu Kripa Patrika
       window.isPatrikaItem = function(it) {
         if (!it) return false;
         const n = String(it.name || "").toLowerCase();
         return String(it.code) === "14" || n.includes("प्रभु कृपा पत्रिका") || n.includes("patrika");
       };
 
-      // Parse existing Patrika item if already in bill (e.g. "प्रभु कृपा पत्रिका (अक्टूबर)" or qtyDisplay "90 + 15")
+      // -----------------------------------------------------------------------
+      // FEATURE #8: AUTOMATIC RECOVERY OF MISSING PATRIKA IN 2020-2026 LOGS
+      // -----------------------------------------------------------------------
+      window.autoRecoverMissingPatrikaInHistory = function(showAlert) {
+        if (!historyLogs || historyLogs.length === 0) return { count: 0, bills: [] };
+        let recoveredBills = [];
+
+        historyLogs.forEach(r => {
+          const items = r.items || [];
+          const alreadyHasPatrika = items.some(it => isPatrikaItem(it));
+          const nextMon = getNextHindiMonthFromBillDate(r.date);
+
+          // Case A: Patrika is already in items, ensure its qtyDisplay ('90 + 15') is formatted if extraFreeQty exists
+          if (alreadyHasPatrika) {
+            items.forEach(it => {
+              if (isPatrikaItem(it)) {
+                if (!it.name.includes("(")) {
+                  it.patrikaMonth = it.patrikaMonth || nextMon;
+                  it.name = `प्रभु कृपा पत्रिका (${it.patrikaMonth})`;
+                }
+                if (it.extraFreeQty === undefined) {
+                  const noteMatch = String(r.specialNote || "").match(/अतः\s*(\d+)\s*पत्रिका/);
+                  it.extraFreeQty = noteMatch ? parseInt(noteMatch[1], 10) : 15;
+                }
+                if (Number(it.extraFreeQty) > 0) {
+                  it.qtyDisplay = `${it.qty} + ${it.extraFreeQty}`;
+                }
+              }
+            });
+            return;
+          }
+
+          // Case B: Patrika row was dropped during Excel import because Qty was '90 + 15' or '100 + 15'!
+          // Check mathematical difference between stored r.totalAmt and sum of existing items:
+          const currentItemsSum = items.reduce((sum, it) => sum + ((Number(it.rate) || 0) * (Number(it.qty) || 0)), 0);
+          const billTotal = Number(r.totalAmt) || 0;
+          const diff = billTotal - currentItemsSum;
+
+          // Prabhu Kripa Patrika rate is ₹50. In historical bills, Paid Qty is typically 30 to 200 pcs (₹1,500 to ₹10,000)
+          if (diff >= 1000 && diff <= 15000 && diff % 50 === 0) {
+            const paidQty = diff / 50;
+            const noteMatch = String(r.specialNote || "").match(/अतः\s*(\d+)\s*पत्रिका/);
+            const extraQty = noteMatch ? parseInt(noteMatch[1], 10) : 15;
+            const patName = `प्रभु कृपा पत्रिका (${nextMon})`;
+
+            items.push({
+              code: "14",
+              name: patName,
+              rate: 50,
+              qty: paidQty,
+              extraFreeQty: extraQty,
+              patrikaMonth: nextMon,
+              qtyDisplay: `${paidQty} + ${extraQty}`
+            });
+
+            recoveredBills.push({
+              id: r.id,
+              date: formatDDMMMYYYY(r.date),
+              patrikaName: patName,
+              qtyDisplay: `${paidQty} + ${extraQty}`,
+              amt: diff,
+              record: r
+            });
+          }
+        });
+
+        if (recoveredBills.length > 0) {
+          localStorage.setItem("pd_history_v10", JSON.stringify(historyLogs));
+          renderHistoryLogs();
+          refreshKpiSummaryCards();
+          renderPreviousRequisitionsCarousel();
+        }
+
+        if (showAlert) {
+          if (recoveredBills.length > 0) {
+            const sampleTxt = recoveredBills.slice(0, 8).map(b => `• ${b.date} (${b.id}): ${b.patrikaName} — Qty: ${b.qtyDisplay} (₹${b.amt})`).join("\n");
+            const confirmSync = confirm(`🎉 कुल ${recoveredBills.length} पुराने रिक्विजिशन में गायब 'प्रभु कृपा पत्रिका' अपने-आप रिकवर हो गई!\n\n${sampleTxt}${recoveredBills.length > 8 ? `\n...और ${recoveredBills.length - 8} अन्य बिल` : ""}\n\nक्या आप इन सभी रिकवर किए गए बिलों को Google Sheet में भी स्थायी रूप से सेव (Sync) करना चाहते हैं?`);
+            if (confirmSync) {
+              syncRecoveredPatrikaBillsToSheet(recoveredBills.map(b => b.record));
+            }
+          } else {
+            alert("✅ सभी पुराने रिक्विजिशन में 'प्रभु कृपा पत्रिका' पहले से ही सही और मौजूद है!");
+          }
+        }
+        return { count: recoveredBills.length, bills: recoveredBills };
+      };
+
+      window.syncRecoveredPatrikaBillsToSheet = async function(recordsList) {
+        if (!APP_CONFIG.GAS_WEB_APP_URL || !recordsList || recordsList.length === 0) return;
+        const badge = document.getElementById("autoSaveStatusBadge");
+        let done = 0;
+        for (const rec of recordsList) {
+          done++;
+          if (badge) {
+            badge.classList.remove("hidden");
+            badge.textContent = `🔄 Syncing Patrika (${done}/${recordsList.length})...`;
+          }
+          try {
+            await fetch(APP_CONFIG.GAS_WEB_APP_URL, {
+              method: "POST",
+              mode: "no-cors",
+              body: JSON.stringify({ action: "saveRequisition", pin: "5616", record: rec })
+            });
+            await new Promise(r => setTimeout(r, 180));
+          } catch (e) {}
+        }
+        if (badge) badge.textContent = "☁️ All Patrika Synced!";
+        alert(`✅ सभी ${recordsList.length} पुराने रिक्विजिशन में 'प्रभु कृपा पत्रिका' Google Sheet में भी सफलतापूर्वक अपडेट हो गई!`);
+      };
+
+      // Hook into Google Sheet fetch so whenever Sheet data loads, missing Patrika rows are auto-recovered immediately!
+      const prevFetch = window.fetchDataFromGoogleSheet;
+      window.fetchDataFromGoogleSheet = async function() {
+        if (typeof prevFetch === "function") await prevFetch();
+        autoRecoverMissingPatrikaInHistory(false);
+        renderPreviousRequisitionsCarousel();
+      };
+
+      // -----------------------------------------------------------------------
+      // FEATURE #5: SANDEAL-STYLE RESIZABLE MULTI-LINE TEXTAREAS (NOTES & ADDRESS)
+      // -----------------------------------------------------------------------
+      function upgradeToSanDealResizableTextareas() {
+        // 1. Convert #specialNoteInput into a multi-line resizable <textarea>
+        const oldNoteIn = document.getElementById("specialNoteInput");
+        if (oldNoteIn && oldNoteIn.tagName !== "TEXTAREA") {
+          const parent = oldNoteIn.parentElement;
+          const curVal = oldNoteIn.value || currentBill.specialNote || "";
+          parent.innerHTML = `
+            <div class="flex justify-between items-center mb-1">
+              <label class="font-bold text-amber-800 dark:text-amber-300 text-[11px]">📝 विशेष नोट / मुख्यमंत्री पत्रिका प्रार्थना (कोने से खींचकर बड़ा-छोटा करें):</label>
+              <button type="button" onclick="document.getElementById('specialNoteInput').value='';currentBill.specialNote='';triggerAutoSave();updateA4Preview();" class="text-[10px] text-red-600 font-bold underline">क्लियर</button>
+            </div>
+            <textarea id="specialNoteInput" rows="3" style="resize: vertical; min-height: 70px;" oninput="triggerAutoSave();updateA4Preview()" placeholder="📝 विशेष नोट या अतिरिक्त सामान का विवरण यहाँ लिखें (पूरा टेक्स्ट साफ दिखेगा)..." class="w-full border-2 border-amber-300 dark:border-slate-700 rounded-xl px-3 py-2 bg-amber-50/50 dark:bg-slate-800 text-xs font-semibold leading-relaxed outline-none focus:border-orange-500"></textarea>
+          `;
+          document.getElementById("specialNoteInput").value = curVal;
+        }
+
+        // 2. Convert Address Settings #cfgAddrLine1 & #cfgAddrLine2 into multi-line resizable <textarea>
+        ["cfgAddrLine1", "cfgAddrLine2"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && el.tagName !== "TEXTAREA") {
+            const textarea = document.createElement("textarea");
+            textarea.id = id;
+            textarea.rows = 2;
+            textarea.style.cssText = "resize: vertical; min-height: 56px;";
+            textarea.className = "w-full border-2 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-800 font-semibold text-xs leading-relaxed outline-none focus:border-orange-500";
+            textarea.value = el.value;
+            el.replaceWith(textarea);
+          }
+        });
+      }
+
+      // -----------------------------------------------------------------------
+      // FEATURE #1 & #3: QUICK 1-57 ITEM PICKER MODAL & NOTE TEMPLATE MODAL
+      // -----------------------------------------------------------------------
+      function injectQuickItemListAndNoteModals() {
+        if (document.getElementById("quickItemPickerModal")) return;
+
+        const modalsHtml = `
+          <!-- SEMI-TRANSPARENT 1-57 MASTER ITEM LIST QUICK PICKER (VIDEO 1) -->
+          <div id="quickItemPickerModal" style="z-index: 9992;" class="fixed inset-0 bg-black/65 backdrop-blur-[2px] hidden items-center justify-center p-2.5 no-print">
+            <div class="bg-white/95 dark:bg-slate-900/95 rounded-2xl max-w-2xl w-full p-3.5 space-y-2.5 text-xs shadow-2xl max-h-[88vh] flex flex-col justify-between border-2 border-orange-400">
+              <div class="flex justify-between items-center border-b dark:border-slate-800 pb-2">
+                <div>
+                  <h3 class="font-extrabold text-sm text-orange-700 dark:text-amber-400">📋 1 से 57 संपूर्ण सामग्री सूची (Quick Order Picker)</h3>
+                  <p class="text-[10.5px] text-slate-500">किसी भी सामग्री पर टैप करें या मात्रा लिखकर '+ जोड़ें' दबाएं:</p>
+                </div>
+                <button onclick="document.getElementById('quickItemPickerModal').classList.add('hidden')" class="bg-red-600 text-white w-7 h-7 rounded-xl font-bold">✕</button>
+              </div>
+
+              <div class="flex gap-2">
+                <input type="text" id="quickPickerSearchIn" oninput="renderQuickItemPickerList()" placeholder="कोड (1-57) या नाम खोजें..." class="flex-1 border-2 border-orange-300 dark:border-slate-700 rounded-xl px-3 py-1.5 bg-white dark:bg-slate-800 font-bold" />
+                <select id="quickPickerCatSel" onchange="renderQuickItemPickerList()" class="border dark:border-slate-700 rounded-xl px-2 py-1.5 bg-white dark:bg-slate-800 font-bold">
+                  <option value="ALL">सभी (57)</option>
+                  <option value="पूजा सामग्री">पूजा सामग्री</option>
+                  <option value="हवन सामग्री">हवन सामग्री</option>
+                  <option value="औषधि">औषधि</option>
+                  <option value="मूर्ति का विवरण">मूर्ति/प्रतिमा</option>
+                  <option value="पत्रिका/पुस्तक">पुस्तकें</option>
+                </select>
+              </div>
+
+              <div id="quickItemPickerListContainer" class="overflow-y-auto divide-y dark:divide-slate-800 border dark:border-slate-700 rounded-xl max-h-[62vh]"></div>
+
+              <div class="flex justify-end pt-1">
+                <button onclick="document.getElementById('quickItemPickerModal').classList.add('hidden')" class="bg-slate-200 dark:bg-slate-800 px-4 py-1.5 rounded-xl font-bold">बंद करें</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- EDITABLE PATRIKA VIP SEVA NOTE TEMPLATE MODAL (VIDEO 2) -->
+          <div id="patrikaNoteTemplateModal" style="z-index: 9994;" class="fixed inset-0 bg-black/75 hidden items-center justify-center p-3 no-print">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-4 space-y-3 text-xs shadow-2xl border-2 border-orange-400">
+              <div class="flex justify-between items-center border-b dark:border-slate-800 pb-2">
+                <h3 class="font-bold text-sm text-orange-700 dark:text-amber-400">⚙️ मुख्यमंत्री / विशिष्ट सेवा नोट टेम्पलेट सेटिंग</h3>
+                <button onclick="document.getElementById('patrikaNoteTemplateModal').classList.add('hidden')" class="text-red-600 font-bold text-sm">✕</button>
+              </div>
+              <p class="text-[11px] text-slate-500">
+                यहाँ आप अपना स्थायी नोट टेम्पलेट बदल सकते हैं। जहाँ <b>{extra}</b> लिखा है, वहाँ अतिरिक्त पत्रिका की संख्या (जैसे 15) अपने-आप आ जाएगी:
+              </p>
+              <textarea id="patrikaTemplateTextarea" rows="5" style="resize: vertical; min-height: 110px;" class="w-full border-2 border-orange-400 rounded-xl p-2.5 bg-amber-50/40 dark:bg-slate-800 font-bold text-xs leading-relaxed"></textarea>
+              <div class="flex justify-between items-center pt-1">
+                <button type="button" onclick="document.getElementById('patrikaTemplateTextarea').value = '${DEFAULT_PATRIKA_VIP_NOTE.replace(/'/g, "\\'")}'" class="text-slate-500 underline font-bold">डिफ़ॉल्ट रीसेट करें</button>
+                <div class="flex gap-2">
+                  <button type="button" onclick="document.getElementById('patrikaNoteTemplateModal').classList.add('hidden')" class="bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-xl font-bold">रद्द</button>
+                  <button type="button" onclick="savePatrikaNoteTemplateFromModal()" class="bg-emerald-600 text-white px-4 py-1.5 rounded-xl font-bold shadow">💾 सेव व लागू करें</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.insertAdjacentHTML("beforeend", modalsHtml);
+
+        // Add '📋 1-57 लिस्ट' button inside Section '2. सामग्री जोड़ें' header
+        const itemSectionHeader = document.getElementById("builderItemCountBadge")?.closest(".flex.justify-between");
+        if (itemSectionHeader && !document.getElementById("btnOpenQuick1to57List")) {
+          const btnWrap = itemSectionHeader.querySelector(".flex.gap-1\\.5");
+          if (btnWrap) {
+            btnWrap.insertAdjacentHTML("afterbegin", `
+              <button type="button" id="btnOpenQuick1to57List" onclick="openQuickItemPickerModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-2 py-0.5 rounded font-bold text-[11px] shadow-xs flex items-center gap-1">
+                <i class="fa-solid fa-table-list"></i> <span>1-57 लिस्ट</span>
+              </button>
+            `);
+          }
+        }
+
+        // Also add Patrika Note Template & Auto-Recover Patrika buttons in Left Sidebar Drawer & Top Strip
+        const adminDrawer = document.getElementById("drawerAdminSection");
+        if (adminDrawer && !document.getElementById("drawerBtnRecoverPatrika")) {
+          adminDrawer.insertAdjacentHTML("afterbegin", `
+            <button id="drawerBtnRecoverPatrika" onclick="autoRecoverMissingPatrikaInHistory(true);closeLeftDrawer();" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-emerald-50 dark:bg-slate-800 hover:bg-emerald-100 text-left font-bold text-emerald-800 dark:text-emerald-300">
+              <i class="fa-solid fa-book-medical text-emerald-600 w-4"></i> <span>📚 पुरानी गायब पत्रिका ऑटो-रिकवर करें</span>
+            </button>
+            <button onclick="openPatrikaNoteTemplateModal();closeLeftDrawer();" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-orange-50 dark:hover:bg-slate-800 text-left font-bold">
+              <i class="fa-solid fa-file-signature text-orange-600 w-4"></i> <span>📝 मुख्यमंत्री पत्रिका नोट टेम्पलेट बदलें</span>
+            </button>
+          `);
+        }
+      }
+
+      window.openQuickItemPickerModal = function() {
+        renderQuickItemPickerList();
+        const modal = document.getElementById("quickItemPickerModal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        pushModalHistoryState();
+      };
+
+      window.renderQuickItemPickerList = function() {
+        const q = (document.getElementById("quickPickerSearchIn")?.value || "").toLowerCase().trim();
+        const cat = document.getElementById("quickPickerCatSel")?.value || "ALL";
+        const box = document.getElementById("quickItemPickerListContainer");
+        if (!box) return;
+
+        const existingMap = {};
+        (currentBill.items || []).forEach(it => { existingMap[it.name.trim()] = it.qtyDisplay || it.qty; });
+
+        const filtered = masterItems.filter(m => {
+          if (cat !== "ALL" && m.category !== cat) return false;
+          if (!q) return true;
+          return String(m.code) === q || m.name.toLowerCase().includes(q) || (m.keywords && m.keywords.toLowerCase().includes(q));
+        });
+
+        box.innerHTML = filtered.map(m => {
+          const inBillQty = existingMap[m.name.trim()];
+          return `
+            <div class="p-2 hover:bg-orange-50/70 dark:hover:bg-slate-800 flex items-center justify-between gap-2">
+              <div onclick="selectItemFromQuickModal('${m.code}')" class="flex items-center gap-2 cursor-pointer flex-1">
+                <span class="bg-slate-900 text-amber-300 font-extrabold px-2 py-0.5 rounded text-[11px] w-9 text-center shrink-0">#${m.code}</span>
+                <div>
+                  <div class="font-bold text-slate-900 dark:text-white">${m.name} ${inBillQty ? `<span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded text-[10px]">✓ बिल में: ${inBillQty}</span>` : ""}</div>
+                  <div class="text-[10px] text-slate-400">${m.category} • सेवा राशि: <b class="text-orange-600">₹${m.rate}</b></div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <input type="number" id="qpQty_${m.code}" value="10" min="1" class="w-14 border rounded-lg px-1.5 py-1 text-center font-bold bg-amber-50 dark:bg-slate-800" />
+                <button type="button" onclick="quickAddFromPicker('${m.code}')" class="bg-orange-600 hover:bg-orange-700 text-white px-2.5 py-1 rounded-lg font-bold">+ जोड़ें</button>
+              </div>
+            </div>
+          `;
+        }).join("");
+      };
+
+      window.selectItemFromQuickModal = function(code) {
+        document.getElementById("quickItemPickerModal").classList.add("hidden");
+        if (typeof pickBuilderItem === "function") pickBuilderItem(code);
+      };
+
+      window.quickAddFromPicker = function(code) {
+        const q = parseInt(document.getElementById(`qpQty_${code}`)?.value, 10) || 1;
+        if (String(code) === "14") {
+          pickedItem = masterItems.find(m => String(m.code) === "14");
+          document.getElementById("selectedItemName").value = pickedItem.name;
+          document.getElementById("selectedItemRate").value = pickedItem.rate;
+          document.getElementById("selectedItemQty").value = q;
+          addSelectedItemToBill();
+        } else {
+          tapCustomShortcut(code, q);
+        }
+        renderQuickItemPickerList();
+      };
+
+      window.openPatrikaNoteTemplateModal = function() {
+        document.getElementById("patrikaTemplateTextarea").value = patrikaNoteTemplate;
+        const modal = document.getElementById("patrikaNoteTemplateModal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        pushModalHistoryState();
+      };
+
+      window.savePatrikaNoteTemplateFromModal = function() {
+        const val = document.getElementById("patrikaTemplateTextarea").value.trim();
+        if (!val) return;
+        patrikaNoteTemplate = val;
+        localStorage.setItem("pd_patrika_note_template_v18", patrikaNoteTemplate);
+        document.getElementById("patrikaNoteTemplateModal").classList.add("hidden");
+        insertPatrikaSevaNoteIntoBill(true);
+        alert("✅ मुख्यमंत्री/विशिष्ट सेवा नोट का नया टेम्पलेट सेव हो गया!");
+      };
+
+      // -----------------------------------------------------------------------
+      // FEATURE #2: COLLAPSIBLE PRABHU KRIPA PATRIKA CONFIG BOX
+      // -----------------------------------------------------------------------
+      function injectPatrikaBuilderUI() {
+        const tableWrap = document.getElementById("builderTableBody")?.closest(".max-h-40");
+        if (!tableWrap) return;
+        document.getElementById("patrikaSpecialConfigBox")?.remove();
+
+        const boxHtml = `
+          <div id="patrikaSpecialConfigBox" class="hidden mt-2 bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 dark:from-slate-800 dark:to-slate-900 border-2 border-orange-400 dark:border-orange-600 rounded-xl p-2 text-xs shadow-sm">
+            <!-- Clickable Collapsible Header -->
+            <div onclick="togglePatrikaBoxCollapse()" class="flex justify-between items-center cursor-pointer select-none">
+              <span class="font-extrabold text-orange-800 dark:text-amber-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-book-open-reader"></i>
+                <span id="patrikaHeaderSummaryTxt">📖 प्रभु कृपा पत्रिका सेटिंग</span>
+              </span>
+              <button type="button" id="patrikaCollapseBtnTxt" class="bg-orange-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                छुपाएं ▲
+              </button>
+            </div>
+
+            <!-- Collapsible Body -->
+            <div id="patrikaCollapsibleBody" class="space-y-2 pt-2 mt-1.5 border-t border-orange-200 dark:border-slate-700">
+              <div class="grid grid-cols-12 gap-2 items-end">
+                <div class="col-span-4">
+                  <label class="text-[10px] font-bold text-slate-600 dark:text-slate-300 block mb-0.5">📅 पत्रिका माह:</label>
+                  <select id="patrikaMonthSelect" onchange="applyPatrikaSpecialSettings()" class="w-full border border-orange-400 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-900 font-bold text-xs">
+                    ${HINDI_MONTHS.map(m => `<option value="${m}">${m}</option>`).join("")}
+                  </select>
+                </div>
+
+                <div class="col-span-4">
+                  <label class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">💰 भुगतान Qty (Paid):</label>
+                  <input type="number" id="patrikaPaidQtyInput" min="1" value="90" oninput="applyPatrikaSpecialSettings()" class="w-full border-2 border-emerald-500 rounded-lg px-2 py-1 text-center font-extrabold bg-white dark:bg-slate-900 text-sm" />
+                </div>
+
+                <div class="col-span-4">
+                  <label class="text-[10px] font-bold text-blue-700 dark:text-blue-400 block mb-0.5">➕ अतिरिक्त सेवा Qty:</label>
+                  <input type="number" id="patrikaExtraQtyInput" min="0" value="15" oninput="applyPatrikaSpecialSettings()" class="w-full border-2 border-blue-500 rounded-lg px-2 py-1 text-center font-extrabold bg-white dark:bg-slate-900 text-sm" />
+                </div>
+              </div>
+
+              <div class="flex flex-wrap justify-between items-center gap-1.5 pt-1">
+                <button type="button" onclick="insertPatrikaSevaNoteIntoBill(true)" class="bg-orange-600 hover:bg-orange-700 text-white px-2.5 py-1 rounded-lg font-bold text-[10.5px] shadow-xs">
+                  📝 मुख्यमंत्री/विशिष्ट सेवा नोट जोड़ें
+                </button>
+                <button type="button" onclick="openPatrikaNoteTemplateModal()" class="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2.5 py-1 rounded-lg font-bold text-[10.5px]">
+                  ⚙️ नोट कंटेंट बदलें
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        tableWrap.insertAdjacentHTML("afterend", boxHtml);
+      }
+
+      window.togglePatrikaBoxCollapse = function() {
+        isPatrikaBoxCollapsed = !isPatrikaBoxCollapsed;
+        const body = document.getElementById("patrikaCollapsibleBody");
+        const btn = document.getElementById("patrikaCollapseBtnTxt");
+        if (body) body.classList.toggle("hidden", isPatrikaBoxCollapsed);
+        if (btn) btn.textContent = isPatrikaBoxCollapsed ? "खोलें ▼" : "छुपाएं ▲";
+      };
+
       function syncPatrikaConfigFromCurrentBill() {
-        injectPatrikaBuilderUI();
+        if (!document.getElementById("patrikaSpecialConfigBox")) injectPatrikaBuilderUI();
         const box = document.getElementById("patrikaSpecialConfigBox");
         if (!box) return;
 
@@ -5392,8 +5739,6 @@
         }
 
         box.classList.remove("hidden");
-
-        // Extract month if present in brackets, else default to next month of bill date
         const mMatch = String(patItem.name || "").match(/\(\s*([^\)]+)\s*\)/);
         const defaultNextMonth = getNextHindiMonthFromBillDate(currentBill.date);
         const chosenMonth = patItem.patrikaMonth || (mMatch && HINDI_MONTHS.includes(mMatch[1].trim()) ? mMatch[1].trim() : defaultNextMonth);
@@ -5401,7 +5746,6 @@
         const paidQty = Number(patItem.qty) || 90;
         const extraQty = patItem.extraFreeQty !== undefined ? Number(patItem.extraFreeQty) : 15;
 
-        // Ensure item properties are standardized
         patItem.patrikaMonth = chosenMonth;
         patItem.extraFreeQty = extraQty;
         patItem.name = `प्रभु कृपा पत्रिका (${chosenMonth})`;
@@ -5415,13 +5759,13 @@
         if (pIn && document.activeElement !== pIn) pIn.value = paidQty;
         if (eIn && document.activeElement !== eIn) eIn.value = extraQty;
 
-        const badge = document.getElementById("patrikaLivePreviewBadge");
-        if (badge) {
-          badge.innerHTML = `छपेगा: <b class="text-orange-700 dark:text-amber-300">${patItem.name}</b> | Qty: <b class="text-blue-700 dark:text-blue-300">${patItem.qtyDisplay}</b> | राशि: <b class="text-emerald-700 dark:text-emerald-400">₹${paidQty * (Number(patItem.rate) || 50)}</b>`;
+        const hdr = document.getElementById("patrikaHeaderSummaryTxt");
+        if (hdr) {
+          hdr.innerHTML = `📖 ${patItem.name} • Qty: <span class="underline">${patItem.qtyDisplay}</span> (₹${paidQty * (Number(patItem.rate) || 50)})`;
         }
       }
 
-      window.applyPatrikaSpecialSettings = function(autoAddNote) {
+      window.applyPatrikaSpecialSettings = function() {
         const patItem = (currentBill.items || []).find(it => isPatrikaItem(it));
         if (!patItem) return;
 
@@ -5430,30 +5774,25 @@
         const extraQty = Math.max(0, parseInt(document.getElementById("patrikaExtraQtyInput")?.value, 10) || 0);
 
         patItem.patrikaMonth = chosenMonth;
-        patItem.qty = paidQty; // Strictly Paid Qty so Rate * Qty = 90 * 50 = 4500!
+        patItem.qty = paidQty;
         patItem.extraFreeQty = extraQty;
         patItem.name = `प्रभु कृपा पत्रिका (${chosenMonth})`;
         patItem.qtyDisplay = extraQty > 0 ? `${paidQty} + ${extraQty}` : `${paidQty}`;
-
-        if (autoAddNote && extraQty > 0) {
-          insertPatrikaSevaNoteIntoBill();
-        }
 
         triggerAutoSave();
         updateA4Preview();
       };
 
-      window.insertPatrikaSevaNoteIntoBill = function() {
+      window.insertPatrikaSevaNoteIntoBill = function(forceReplace) {
         const patItem = (currentBill.items || []).find(it => isPatrikaItem(it));
         const extraQty = patItem && patItem.extraFreeQty !== undefined ? Number(patItem.extraFreeQty) : (parseInt(document.getElementById("patrikaExtraQtyInput")?.value, 10) || 15);
-        const newNote = buildDefaultPatrikaSevaNote(extraQty);
+        const newNote = buildPatrikaSevaNote(extraQty);
         const noteIn = document.getElementById("specialNoteInput");
         if (noteIn) {
-          // Replace old patrika prayer note if present, or set it
-          if (!noteIn.value.trim() || noteIn.value.includes("मुख्यमंत्री आवास पर")) {
+          if (forceReplace || !noteIn.value.trim() || noteIn.value.includes("मुख्यमंत्री") || noteIn.value.includes("प्रार्थना:-")) {
             noteIn.value = newNote;
           } else {
-            noteIn.value = noteIn.value.trim() + " | " + newNote;
+            noteIn.value = noteIn.value.trim() + "\n" + newNote;
           }
           currentBill.specialNote = noteIn.value;
           triggerAutoSave();
@@ -5461,14 +5800,12 @@
         }
       };
 
-      // 2. Intercept addSelectedItemToBill & tapCustomShortcut so adding #14 Patrika auto-sets Next Month & +15 Extra!
       const origAddSelected = window.addSelectedItemToBill;
       window.addSelectedItemToBill = function() {
         const rawQtyStr = String(document.getElementById("selectedItemQty")?.value || "1").trim();
         const rawNameStr = String(document.getElementById("selectedItemName")?.value || document.getElementById("itemLookupInput")?.value || "").trim();
         const isPat = (pickedItem && String(pickedItem.code) === "14") || rawNameStr.includes("प्रभु कृपा पत्रिका") || rawNameStr.toLowerCase().includes("patrika");
 
-        // Check if user typed "90+15" directly in Qty box for Patrika!
         let typedPaid = null, typedExtra = null;
         if (isPat && /^\d+\s*\+\s*\d+$/.test(rawQtyStr)) {
           const parts = rawQtyStr.split("+").map(s => parseInt(s.trim(), 10));
@@ -5490,10 +5827,9 @@
             patItem.name = `प्रभु कृपा पत्रिका (${patItem.patrikaMonth})`;
             patItem.qtyDisplay = patItem.extraFreeQty > 0 ? `${patItem.qty} + ${patItem.extraFreeQty}` : `${patItem.qty}`;
 
-            // Auto-fill the CM House / VIP Seva Note if note is empty
             const noteIn = document.getElementById("specialNoteInput");
             if (noteIn && !noteIn.value.trim() && patItem.extraFreeQty > 0) {
-              noteIn.value = buildDefaultPatrikaSevaNote(patItem.extraFreeQty);
+              noteIn.value = buildPatrikaSevaNote(patItem.extraFreeQty);
               currentBill.specialNote = noteIn.value;
             }
             triggerAutoSave();
@@ -5502,10 +5838,209 @@
         }
       };
 
-      // 3. Hook into updateA4Preview so the A4 Table & Builder Table show '90 + 15' in Qty while Remarks shows '4500' (90 * 50)!
-      const origUpdateA4Patrika = window.updateA4Preview;
+      // -----------------------------------------------------------------------
+      // FEATURE #4: COLLAPSIBLE DROPDOWN FOR SMART BALANCE FILLER SUGGESTIONS
+      // -----------------------------------------------------------------------
+      window.renderSmartBalanceFillers = function(diffAmt) {
+        const sugBox = document.getElementById("smartFillerSuggestions");
+        if (!sugBox || diffAmt <= 0) return;
+        const exactMatches = [];
+        masterItems.forEach(m => {
+          if (m.rate > 0 && diffAmt >= m.rate) {
+            if (diffAmt % m.rate === 0) {
+              const q = diffAmt / m.rate;
+              if (q <= 50) exactMatches.push({ code: m.code, name: m.name, rate: m.rate, qty: q, exact: true });
+            } else {
+              const q = Math.floor(diffAmt / m.rate);
+              if (q > 0 && q <= 20) exactMatches.push({ code: m.code, name: m.name, rate: m.rate, qty: q, exact: false });
+            }
+          }
+        });
+        exactMatches.sort((a, b) => (b.exact - a.exact) || ((b.rate * b.qty) - (a.rate * a.qty)));
+        const topPicks = exactMatches.slice(0, 6);
+        if (topPicks.length === 0) { sugBox.classList.add("hidden"); return; }
+
+        sugBox.innerHTML = `
+          <div onclick="toggleSmartFillerDropdown()" class="flex justify-between items-center cursor-pointer select-none">
+            <span class="text-[10.5px] font-bold text-amber-900 dark:text-amber-300">💡 बचे हुए ₹${diffAmt} के सामग्री सुझाव (${topPicks.length} विकल्प)</span>
+            <span id="smartFillerToggleLbl" class="bg-amber-200 dark:bg-slate-700 text-amber-900 dark:text-amber-200 px-2 py-0.5 rounded text-[10px] font-bold">${isSmartFillerOpen ? "छुपाएं ▲" : "देखें ▼"}</span>
+          </div>
+          <div id="smartFillerCollapsiblePills" class="${isSmartFillerOpen ? "" : "hidden"} flex flex-wrap gap-1 pt-1.5 mt-1 border-t border-amber-200 dark:border-slate-700">
+            ${topPicks.map(p => `
+              <button type="button" onclick="tapCustomShortcut('${p.code}', ${p.qty})" class="bg-white dark:bg-slate-900 border ${p.exact ? 'border-emerald-500 text-emerald-800 dark:text-emerald-300' : 'border-amber-400 text-amber-900 dark:text-amber-200'} px-2 py-0.5 rounded-md text-[10px] font-bold shadow-xs hover:bg-emerald-600 hover:text-white transition">
+                +${p.qty} ${p.name} (₹${p.rate * p.qty}) ${p.exact ? '🎯' : ''}
+              </button>
+            `).join("")}
+          </div>
+        `;
+        sugBox.classList.remove("hidden");
+      };
+
+      window.toggleSmartFillerDropdown = function() {
+        isSmartFillerOpen = !isSmartFillerOpen;
+        const pills = document.getElementById("smartFillerCollapsiblePills");
+        const lbl = document.getElementById("smartFillerToggleLbl");
+        if (pills) pills.classList.toggle("hidden", !isSmartFillerOpen);
+        if (lbl) lbl.textContent = isSmartFillerOpen ? "छुपाएं ▲" : "देखें ▼";
+      };
+
+      // -----------------------------------------------------------------------
+      // FEATURE #6: HORIZONTAL SLIDING PREVIOUS REQUISITIONS CAROUSEL ABOVE A4 PREVIEW
+      // -----------------------------------------------------------------------
+      function injectPreviousRequisitionsCarousel() {
+        const a4Container = document.getElementById("a4ScalerContainer");
+        if (!a4Container || document.getElementById("prevReqsCarouselWrapper")) return;
+
+        const carouselHtml = `
+          <div id="prevReqsCarouselWrapper" class="bg-white dark:bg-slate-900 border-2 border-orange-200 dark:border-slate-800 rounded-xl p-2.5 space-y-2 shadow-xs no-print">
+            <div class="flex justify-between items-center">
+              <div onclick="togglePrevReqsCarousel()" class="flex items-center gap-1.5 cursor-pointer select-none">
+                <i class="fa-solid fa-images text-orange-600"></i>
+                <span class="font-bold text-xs text-slate-800 dark:text-white">🗂️ पिछले रिक्विजिशन कार्ड्स (बाएं-दाएं स्लाइड करके देखें)</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="autoRecoverMissingPatrikaInHistory(true)" class="bg-emerald-100 dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 border border-emerald-300 px-2 py-0.5 rounded-lg text-[10px] font-bold" title="पुराने बिलों में गायब प्रभु कृपा पत्रिका रिकवर करें">
+                  📚 पत्रिका रिकवर
+                </button>
+                <button type="button" onclick="togglePrevReqsCarousel()" id="prevCarouselToggleBtn" class="bg-orange-100 dark:bg-slate-800 text-orange-800 dark:text-amber-300 px-2 py-0.5 rounded-lg text-[10px] font-bold">
+                  छुपाएं ▲
+                </button>
+              </div>
+            </div>
+
+            <div id="prevReqsCarouselTrack" class="flex gap-2.5 overflow-x-auto pb-1.5 pt-0.5 snap-x" style="-webkit-overflow-scrolling: touch;"></div>
+          </div>
+        `;
+        a4Container.insertAdjacentHTML("beforebegin", carouselHtml);
+        renderPreviousRequisitionsCarousel();
+      }
+
+      window.togglePrevReqsCarousel = function() {
+        isPrevCarouselOpen = !isPrevCarouselOpen;
+        const track = document.getElementById("prevReqsCarouselTrack");
+        const btn = document.getElementById("prevCarouselToggleBtn");
+        if (track) track.classList.toggle("hidden", !isPrevCarouselOpen);
+        if (btn) btn.textContent = isPrevCarouselOpen ? "छुपाएं ▲" : "दिखाएं ▼";
+      };
+
+      window.renderPreviousRequisitionsCarousel = function() {
+        const track = document.getElementById("prevReqsCarouselTrack");
+        if (!track || !historyLogs) return;
+
+        const recentBills = historyLogs.slice(0, 16);
+        if (recentBills.length === 0) {
+          track.innerHTML = `<div class="text-slate-400 text-xs p-3">कोई पिछला रिक्विजिशन उपलब्ध नहीं है।</div>`;
+          return;
+        }
+
+        track.innerHTML = recentBills.map((r, idx) => {
+          const allItems = r.items || [];
+          const pendList = r.pendingItems || [];
+          const pendText = pendList.map(p => `${p.name} (${p.qty})`).join(", ");
+
+          return `
+            <div class="snap-start shrink-0 w-60 bg-white dark:bg-slate-950 text-black dark:text-slate-100 border-2 border-slate-300 dark:border-slate-700 hover:border-orange-500 rounded-xl p-2 flex flex-col justify-between shadow-sm transition">
+              <div>
+                <div class="flex justify-between items-center border-b border-slate-300 dark:border-slate-700 pb-1 mb-1">
+                  <span class="font-extrabold text-[11px] text-orange-700 dark:text-amber-400">📅 ${formatDDMMMYYYY(r.date)}</span>
+                  <span class="bg-slate-900 text-amber-300 px-1.5 py-0.2 rounded text-[9.5px] font-bold">${r.id}</span>
+                </div>
+                <div class="max-h-36 overflow-y-auto pr-0.5">
+                  <table class="w-full text-[10px] border-collapse">
+                    <thead>
+                      <tr class="bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700">
+                        <th class="text-left py-0.5 px-1">सामग्री (${allItems.length})</th>
+                        <th class="text-center py-0.5 px-1">Qty</th>
+                        <th class="text-right py-0.5 px-1">Amt</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                      ${allItems.map((it, i) => {
+                        const qDisp = it.qtyDisplay || (Number(it.extraFreeQty) > 0 ? `${it.qty}+${it.extraFreeQty}` : it.qty);
+                        const amt = (Number(it.rate) || 0) * (Number(it.qty) || 0);
+                        return `
+                          <tr>
+                            <td class="py-0.5 px-1 font-bold truncate max-w-[115px]" title="${it.name}">${i + 1}. ${it.name}</td>
+                            <td class="py-0.5 px-1 text-center font-extrabold text-blue-700 dark:text-blue-400 whitespace-nowrap">${qDisp}</td>
+                            <td class="py-0.5 px-1 text-right font-bold">${amt}</td>
+                          </tr>
+                        `;
+                      }).join("")}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="pt-1.5 mt-1 border-t border-slate-300 dark:border-slate-700 space-y-1">
+                ${pendList.length > 0 ? `<div class="bg-red-100 text-red-900 px-1.5 py-0.5 rounded text-[9.5px] font-bold truncate" title="${pendText}">🔴 Pending: ${pendText}</div>` : ""}
+                <div class="flex justify-between items-center">
+                  <span class="font-extrabold text-[11px] bg-yellow-200 text-black px-1.5 py-0.5 rounded">Total: ₹${r.totalAmt}</span>
+                  <div class="flex gap-1">
+                    <button type="button" onclick="copySingleHistoricalBillToCurrent(${idx})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-0.5 rounded text-[9.5px] font-bold" title="इस बिल के सामान वर्तमान बिल में कॉपी करें">+ कॉपी</button>
+                    <button type="button" onclick="viewLogInPDFModal(${idx})" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-0.5 rounded text-[9.5px] font-bold">A4 देखें</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      };
+
+      window.copySingleHistoricalBillToCurrent = function(idx) {
+        const rec = historyLogs[idx];
+        if (!rec) return;
+        pushUndoState(`Copied items from ${rec.id}`);
+        currentBill.items = JSON.parse(JSON.stringify(rec.items || []));
+        triggerAutoSave();
+        updateA4Preview();
+        alert(`📋 बिल ${rec.id} (${formatDDMMMYYYY(rec.date)}) के सभी ${(rec.items || []).length} सामान वर्तमान बिल में कॉपी हो गए!`);
+      };
+
+      // -----------------------------------------------------------------------
+      // FEATURE #7: COLLAPSIBLE / LOCKABLE BOTTOM A4 SLIDERS CONTROL BAR
+      // -----------------------------------------------------------------------
+      function makeBottomSlidersControlBarCollapsible() {
+        const fontSlider = document.getElementById("a4FontSlider");
+        if (!fontSlider) return;
+        const controlPanel = fontSlider.closest(".bg-slate-900");
+        if (!controlPanel || document.getElementById("a4SlidersAccordionHeader")) return;
+
+        const existingInnerHtml = controlPanel.innerHTML;
+        controlPanel.innerHTML = `
+          <div id="a4SlidersAccordionHeader" onclick="toggleBottomA4SlidersPanel()" class="flex justify-between items-center cursor-pointer select-none py-0.5">
+            <span class="font-bold text-xs text-amber-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-sliders"></i>
+              <span>🎛️ A4 साइज, फॉन्ट एवं कलर स्लाइडर सेटिंग्स (गलत टच से लॉक)</span>
+            </span>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="event.stopPropagation();openFullPrintPreview();" class="bg-orange-600 hover:bg-orange-500 text-white px-2.5 py-0.5 rounded-lg font-bold text-[10.5px]">Full Preview</button>
+              <span id="a4SlidersToggleBadge" class="bg-slate-700 text-emerald-300 px-2.5 py-0.5 rounded-lg font-bold text-[10.5px]">खोलें ▼</span>
+            </div>
+          </div>
+          <div id="a4SlidersCollapsibleBody" class="hidden space-y-2 pt-2 mt-1.5 border-t border-slate-700">
+            ${existingInnerHtml}
+          </div>
+        `;
+      }
+
+      window.toggleBottomA4SlidersPanel = function() {
+        isA4SlidersOpen = !isA4SlidersOpen;
+        const body = document.getElementById("a4SlidersCollapsibleBody");
+        const badge = document.getElementById("a4SlidersToggleBadge");
+        if (body) body.classList.toggle("hidden", !isA4SlidersOpen);
+        if (badge) {
+          badge.textContent = isA4SlidersOpen ? "लॉक व छुपाएं ▲" : "खोलें ▼";
+          badge.className = isA4SlidersOpen
+            ? "bg-emerald-600 text-white px-2.5 py-0.5 rounded-lg font-bold text-[10.5px]"
+            : "bg-slate-700 text-emerald-300 px-2.5 py-0.5 rounded-lg font-bold text-[10.5px]";
+        }
+      };
+
+      // -----------------------------------------------------------------------
+      // PATCH A4 PREVIEW & GALLERY SO '90 + 15' ALWAYS RENDERS IN QTY COLUMN
+      // -----------------------------------------------------------------------
+      const prevUpdateA4 = window.updateA4Preview;
       window.updateA4Preview = function() {
-        // Ensure any Patrika item has its qtyDisplay synced before rendering
         (currentBill.items || []).forEach(it => {
           if (isPatrikaItem(it)) {
             const mMatch = String(it.name || "").match(/\(\s*([^\)]+)\s*\)/);
@@ -5517,11 +6052,10 @@
           }
         });
 
-        if (typeof origUpdateA4Patrika === "function") origUpdateA4Patrika();
+        if (typeof prevUpdateA4 === "function") prevUpdateA4();
 
         syncPatrikaConfigFromCurrentBill();
 
-        // Patch the A4 Table Qty cell & Builder Row for Patrika so it displays '90 + 15' while keeping Remarks = 4500!
         const a4Rows = document.querySelectorAll("#a4ItemsBody tr");
         const bRows = document.querySelectorAll("#builderTableBody tr");
 
@@ -5530,25 +6064,50 @@
             const disp = `${it.qty} + ${it.extraFreeQty}`;
             if (a4Rows[idx]) {
               const cells = a4Rows[idx].querySelectorAll("td");
-              if (cells[3]) cells[3].textContent = disp; // Column 4: Qty shows '90 + 15'
-              if (cells[4]) cells[4].textContent = Number(it.rate) * Number(it.qty); // Column 5: Remarks strictly 90 * 50 = 4500
+              if (cells[3]) cells[3].textContent = disp;
+              if (cells[4]) cells[4].textContent = Number(it.rate) * Number(it.qty);
             }
             if (bRows[idx]) {
               const bCells = bRows[idx].querySelectorAll("td");
               if (bCells[3]) {
-                bCells[3].innerHTML = `<span onclick="document.getElementById('patrikaPaidQtyInput').focus()" class="cursor-pointer bg-amber-100 text-orange-900 px-1.5 py-0.5 rounded font-extrabold border border-orange-400" title="नीचे पत्रिका सेटिंग बॉक्स से बदलें">${disp}</span>`;
+                bCells[3].innerHTML = `<span onclick="if(isPatrikaBoxCollapsed){togglePatrikaBoxCollapse();}document.getElementById('patrikaPaidQtyInput').focus();" class="cursor-pointer bg-amber-100 text-orange-900 px-1.5 py-0.5 rounded font-extrabold border border-orange-400" title="नीचे पत्रिका सेटिंग बॉक्स से बदलें">${disp}</span>`;
               }
             }
           }
         });
       };
 
-      // Initialize on load
+      // Also patch renderHistoryLogs so A4 Gallery cards and List View show '90 + 15' for Patrika
+      const origRenderHistoryLogs = window.renderHistoryLogs;
+      window.renderHistoryLogs = function() {
+        if (typeof origRenderHistoryLogs === "function") origRenderHistoryLogs();
+        // Update mini A4 gallery cards & list view to display '90 + 15' whenever extraFreeQty > 0
+        const galBox = document.getElementById("historyGalleryContainer");
+        if (galBox) {
+          galBox.querySelectorAll("tr").forEach(tr => {
+            const tds = tr.querySelectorAll("td");
+            if (tds.length >= 3 && tds[1].textContent.includes("प्रभु कृपा पत्रिका")) {
+              const qTxt = tds[2].textContent.trim();
+              if ((qTxt === "90" || qTxt === "100" || qTxt === "80" || qTxt === "70") && !qTxt.includes("+")) {
+                tds[2].textContent = `${qTxt}+15`;
+              }
+            }
+          });
+        }
+      };
+
+      // Initialize all 8 upgrades on startup
       setTimeout(() => {
+        upgradeToSanDealResizableTextareas();
+        injectQuickItemListAndNoteModals();
         injectPatrikaBuilderUI();
+        injectPreviousRequisitionsCarousel();
+        makeBottomSlidersControlBarCollapsible();
+        autoRecoverMissingPatrikaInHistory(false);
         syncPatrikaConfigFromCurrentBill();
-      }, 300);
-    })();
+        updateA4Preview();
+      }, 350);
+    })();    
 
   </script>
 </body>
