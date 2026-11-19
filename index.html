@@ -7441,6 +7441,160 @@
         renderHistoryLogs();
       }, 800);
     })();
+    // =========================================================================
+    // 🚀 v21.5 PATCH: PERMANENT DELETE SYNC PROTECTION (DELETED BILLS NEVER
+    // REAPPEAR AFTER PAGE REFRESH OR GOOGLE SHEET SYNC!)
+    // =========================================================================
+    (function enableV215PermanentDeleteSyncGuard() {
+      let deletedBillSigs = JSON.parse(localStorage.getItem("pd_deleted_bill_sigs_v215") || "[]");
+
+      // Unique bill signature (Date + Total + ItemCount) so re-numbered REQ-IDs never collide
+      function getBillSignature(rec) {
+        if (!rec) return "";
+        const iso = normalizeToISODate(rec.date);
+        const tot = Number(rec.totalAmt) || 0;
+        const cnt = (rec.items || []).length;
+        return `${iso}|${tot}|${cnt}`;
+      }
+
+      function saveDeletedSigs() {
+        localStorage.setItem("pd_deleted_bill_sigs_v215", JSON.stringify(deletedBillSigs));
+      }
+
+      function renumberTopRecentBillsAndGetShifts() {
+        const shifts = [];
+        const total = historyLogs.length;
+        for (let i = Math.min(9, total - 1); i >= 0; i--) {
+          const oldId = historyLogs[i].id;
+          const belowRec = historyLogs[i + 1];
+          const belowMatch = belowRec && String(belowRec.id || "").match(/^REQ-(\d+)$/i);
+          const newId = belowMatch
+            ? ("REQ-" + String(parseInt(belowMatch[1], 10) + 1).padStart(3, "0"))
+            : ("REQ-" + String(total - i).padStart(3, "0"));
+
+          if (oldId !== newId) {
+            historyLogs[i].id = newId;
+            shifts.push({
+              oldId: oldId,
+              newId: newId,
+              date: normalizeToISODate(historyLogs[i].date),
+              totalAmt: Number(historyLogs[i].totalAmt) || 0
+            });
+          }
+        }
+        return shifts;
+      }
+
+      function purgeDeletedBillsFromLogs() {
+        if (!deletedBillSigs || deletedBillSigs.length === 0) return false;
+        const beforeLen = historyLogs.length;
+        historyLogs = historyLogs.filter(r => !deletedBillSigs.includes(getBillSignature(r)));
+        if (historyLogs.length !== beforeLen) {
+          renumberTopRecentBillsAndGetShifts();
+          localStorage.setItem("pd_history_v10", JSON.stringify(historyLogs));
+          return true;
+        }
+        return false;
+      }
+
+      // 1. Upgrade Delete Requisition to record signature & send Date + Total + Renumbered IDs to Google Sheet
+      window.deleteRequisitionWithAutoRenumber = function(realIdx) {
+        const rec = historyLogs[realIdx];
+        if (!rec) return;
+        const delId = rec.id;
+        const delDateIso = normalizeToISODate(rec.date);
+        const delDate = formatDDMMMYYYY(rec.date);
+        const delTotal = Number(rec.totalAmt) || 0;
+        const sig = getBillSignature(rec);
+        const itemsSummary = (rec.items || []).map(it => `${it.name} (${it.qtyDisplay || it.qty})`).join(", ");
+
+        askDeleteConfirmation(`क्या आप वाकई "${delDate} (${delId}) — ₹${delTotal}" का रिक्विजिशन डिलीट करना चाहते हैं? (यह 🗑️ Recycle Bin में सुरक्षित रहेगा और रिफ्रेश करने पर वापस नहीं आएगा)`, () => {
+          pushUndoState(`Deleted Requisition ${delId}`);
+
+          if (sig && !deletedBillSigs.includes(sig)) {
+            deletedBillSigs.push(sig);
+            saveDeletedSigs();
+          }
+
+          recycleBin.unshift({
+            type: "REQUISITION",
+            deletedAt: new Date().toLocaleString("en-IN"),
+            deletedBy: currentUser?.name || "Admin",
+            record: JSON.parse(JSON.stringify(rec))
+          });
+          localStorage.setItem("pd_bin_v10", JSON.stringify(recycleBin));
+
+          historyLogs.splice(realIdx, 1);
+          const shifts = renumberTopRecentBillsAndGetShifts();
+
+          if (String(currentBill.id) === String(delId) && normalizeToISODate(currentBill.date) === delDateIso) {
+            currentBill.id = getNextSequentialReqId();
+          } else {
+            const matchedCur = historyLogs.find(r => normalizeToISODate(r.date) === normalizeToISODate(currentBill.date) && Number(r.totalAmt) === Number(currentBill.totalAmt));
+            if (matchedCur) currentBill.id = matchedCur.id;
+          }
+
+          localStorage.setItem("pd_history_v10", JSON.stringify(historyLogs));
+          renderHistoryLogs();
+          renderRecycleBin();
+          updateTopActionButtons();
+          refreshKpiSummaryCards();
+          updateA4Preview();
+          if (typeof renderPreviousRequisitionsCarousel === "function") renderPreviousRequisitionsCarousel();
+
+          recordActivity(`🗑️ रिक्विजिशन डिलीट किया गया: ${delId} (${delDate}) | Total: ₹${delTotal} | सामान: ${itemsSummary || "None"}`, rec);
+
+          if (APP_CONFIG.GAS_WEB_APP_URL) {
+            fetch(APP_CONFIG.GAS_WEB_APP_URL, {
+              method: "POST",
+              mode: "no-cors",
+              body: JSON.stringify({
+                action: "deleteRequisition",
+                pin: "5616",
+                reqId: delId,
+                reqDate: delDateIso,
+                totalAmt: delTotal,
+                renumberedPairs: shifts
+              })
+            });
+          }
+        });
+      };
+
+      // 2. When Restoring a Requisition from Recycle Bin, remove its signature from deletedBillSigs!
+      const prevRestoreV215 = window.restoreFromBin;
+      window.restoreFromBin = function(idx) {
+        const entry = recycleBin[idx];
+        if (entry && entry.type === "REQUISITION" && entry.record) {
+          const sig = getBillSignature(entry.record);
+          deletedBillSigs = deletedBillSigs.filter(s => s !== sig);
+          saveDeletedSigs();
+        }
+        if (typeof prevRestoreV215 === "function") prevRestoreV215(idx);
+      };
+
+      // 3. Guard Google Sheet Sync so any deleted bill NEVER comes back on page refresh!
+      const prevFetchV215 = window.fetchDataFromGoogleSheet;
+      window.fetchDataFromGoogleSheet = async function() {
+        if (typeof prevFetchV215 === "function") {
+          await prevFetchV215();
+        }
+        if (purgeDeletedBillsFromLogs()) {
+          renderHistoryLogs();
+          refreshKpiSummaryCards();
+          if (typeof renderPreviousRequisitionsCarousel === "function") renderPreviousRequisitionsCarousel();
+        }
+      };
+
+      // Run once immediately on load
+      setTimeout(() => {
+        if (purgeDeletedBillsFromLogs()) {
+          renderHistoryLogs();
+          refreshKpiSummaryCards();
+          if (typeof renderPreviousRequisitionsCarousel === "function") renderPreviousRequisitionsCarousel();
+        }
+      }, 400);
+    })();
 
   </script>
 </body>
