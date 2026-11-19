@@ -6855,6 +6855,592 @@
         updateTopActionButtons();
       }, 700);
     })();
+    // =========================================================================
+    // 🚀 v21.0 MASTER PATCH:
+    // 1. Per-Requisition Permanent Layout Persistence (All 12 Font/Height/Theme Sliders)
+    // 2. Auto-Lock on '✅ मिलान पूर्ण' & 1-Tap '🔒 Requisition Sent (Lock)' + Full Unlock List
+    // 3. Real Android Share Sheet Modal (Choose WhatsApp vs Business & Auto-Attach PDF in Gmail!)
+    // 4. Crisp Guaranteed Underlines under 'Pooja Samagri Details' & Date in PDF/Image
+    // =========================================================================
+    (function enableV21PersistenceLockShareAndUnderlineFix() {
+
+      // -----------------------------------------------------------------------
+      // 1. FIX UNDERLINE RENDERING IN PDF & HD IMAGE (GUARANTEED VISIBLE!)
+      // -----------------------------------------------------------------------
+      const v21Css = `
+        <style id="v21UnderlineAndLockStyles">
+          .underline-wrap {
+            display: inline-block !important;
+            border-bottom: 2px solid #000000 !important;
+            padding-bottom: 2px !important;
+            line-height: 1.2 !important;
+          }
+          .underline-bar {
+            display: none !important;
+          }
+        </style>
+      `;
+      if (!document.getElementById("v21UnderlineAndLockStyles")) {
+        document.head.insertAdjacentHTML("beforeend", v21Css);
+      }
+
+      const prevCreateExportCloneV21 = window.createExportReadyA4Clone;
+      window.createExportReadyA4Clone = function() {
+        const res = prevCreateExportCloneV21();
+        if (res && res.clone) {
+          res.clone.querySelectorAll(".underline-wrap").forEach(el => {
+            el.style.display = "inline-block";
+            el.style.borderBottom = "2px solid #000000";
+            el.style.paddingBottom = "2px";
+            el.style.lineHeight = "1.2";
+          });
+          res.clone.querySelectorAll(".underline-bar").forEach(bar => {
+            bar.style.display = "none";
+          });
+        }
+        return res;
+      };
+
+      // -----------------------------------------------------------------------
+      // 2. PERMANENT PER-REQUISITION LAYOUT VAULT (FONT, NOTE, FOOTER, PHOTO, THEME)
+      // -----------------------------------------------------------------------
+      let billLayoutVault = JSON.parse(localStorage.getItem("pd_bill_layout_vault_v21") || "{}");
+      let billLockVault = JSON.parse(localStorage.getItem("pd_bill_lock_vault_v21") || "{}");
+
+      const DEFAULT_LAYOUT = {
+        fontSize: 14,
+        pendFontSize: 13.5,
+        addrFontSize: 11,
+        senderFontSize: 11,
+        footerPadding: 4,
+        noteFontSize: 12.5,
+        notePadding: 5,
+        cashSlipHeight: 210,
+        onlineSlipHeight: 210,
+        slipAlign: "justify-between",
+        printTheme: "classic",
+        fontStyleMode: "default"
+      };
+
+      function extractLayoutFields(obj) {
+        if (!obj) return { ...DEFAULT_LAYOUT };
+        return {
+          fontSize: obj.fontSize !== undefined ? Number(obj.fontSize) : DEFAULT_LAYOUT.fontSize,
+          pendFontSize: obj.pendFontSize !== undefined ? Number(obj.pendFontSize) : DEFAULT_LAYOUT.pendFontSize,
+          addrFontSize: obj.addrFontSize !== undefined ? Number(obj.addrFontSize) : DEFAULT_LAYOUT.addrFontSize,
+          senderFontSize: obj.senderFontSize !== undefined ? Number(obj.senderFontSize) : DEFAULT_LAYOUT.senderFontSize,
+          footerPadding: obj.footerPadding !== undefined ? Number(obj.footerPadding) : DEFAULT_LAYOUT.footerPadding,
+          noteFontSize: obj.noteFontSize !== undefined ? Number(obj.noteFontSize) : DEFAULT_LAYOUT.noteFontSize,
+          notePadding: obj.notePadding !== undefined ? Number(obj.notePadding) : DEFAULT_LAYOUT.notePadding,
+          cashSlipHeight: obj.cashSlipHeight !== undefined ? Number(obj.cashSlipHeight) : DEFAULT_LAYOUT.cashSlipHeight,
+          onlineSlipHeight: obj.onlineSlipHeight !== undefined ? Number(obj.onlineSlipHeight) : DEFAULT_LAYOUT.onlineSlipHeight,
+          slipAlign: obj.slipAlign || DEFAULT_LAYOUT.slipAlign,
+          printTheme: obj.printTheme || DEFAULT_LAYOUT.printTheme,
+          fontStyleMode: obj.fontStyleMode || DEFAULT_LAYOUT.fontStyleMode
+        };
+      }
+
+      window.saveLayoutForBill = function(billObj) {
+        if (!billObj) return;
+        const idKey = String(billObj.id || "").trim();
+        const dateKey = normalizeToISODate(billObj.date);
+        const layout = extractLayoutFields(billObj);
+
+        if (idKey) billLayoutVault[idKey] = layout;
+        if (dateKey) billLayoutVault["DATE_" + dateKey] = layout;
+        try {
+          localStorage.setItem("pd_bill_layout_vault_v21", JSON.stringify(billLayoutVault));
+        } catch (e) {}
+
+        // Also update the matching historyLogs entry immediately so local storage stays synced
+        const idx = historyLogs.findIndex(r => String(r.id).trim() === idKey);
+        if (idx > -1) {
+          Object.assign(historyLogs[idx], layout);
+          try { localStorage.setItem("pd_history_v10", JSON.stringify(historyLogs)); } catch (e) {}
+        }
+      };
+
+      window.hydrateLayoutAndLockForRec = function(rec) {
+        if (!rec) return rec;
+        const idKey = String(rec.id || "").trim();
+        const dateKey = normalizeToISODate(rec.date);
+        const saved = billLayoutVault[idKey] || billLayoutVault["DATE_" + dateKey];
+        if (saved) {
+          Object.assign(rec, saved);
+        } else {
+          // Fill missing layout fields from defaults without overwriting existing ones
+          Object.keys(DEFAULT_LAYOUT).forEach(k => {
+            if (rec[k] === undefined) rec[k] = DEFAULT_LAYOUT[k];
+          });
+        }
+        const savedLock = billLockVault[idKey];
+        if (savedLock) {
+          rec.sendState = savedLock.sendState || rec.sendState;
+          rec.isLocked = savedLock.isLocked !== undefined ? savedLock.isLocked : rec.isLocked;
+        }
+        return rec;
+      };
+
+      function applyLayoutToAllDomSliders(billObj) {
+        const setEl = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val; };
+        setEl("a4FontSlider", billObj.fontSize);
+        setEl("a4PendFontSlider", billObj.pendFontSize);
+        setEl("a4AddrFontSlider", billObj.addrFontSize);
+        setEl("a4SenderFontSlider", billObj.senderFontSize);
+        setEl("a4FooterPadSlider", billObj.footerPadding);
+        setEl("a4NoteFontSlider", billObj.noteFontSize);
+        setEl("a4NotePadSlider", billObj.notePadding);
+        setEl("cashSlipHeightSlider", billObj.cashSlipHeight);
+        setEl("onlineSlipHeightSlider", billObj.onlineSlipHeight);
+        setEl("slipAlignSelect", billObj.slipAlign);
+        setEl("a4PrintThemeSelect", billObj.printTheme);
+        setEl("a4FontStyleSelect", billObj.fontStyleMode);
+      }
+
+      // Override viewLogInPDFModal & loadHistoricalIntoBuilder so ALL 12 layout settings are restored BEFORE updateA4Preview() runs!
+      function loadRecordIntoCurrentBillCleanly(rec) {
+        restoreBillPhotosFromVault(rec);
+        hydrateLayoutAndLockForRec(rec);
+        const layout = extractLayoutFields(rec);
+        currentBill = {
+          id: rec.id || "REQ-HIST",
+          date: normalizeToISODate(rec.date),
+          branch: (rec.branch || "Patna Dham").replace(/,?\s*\(?Bihar\)?/gi, "").trim(),
+          items: JSON.parse(JSON.stringify(rec.items || [])),
+          pendingItems: JSON.parse(JSON.stringify(rec.pendingItems || [])),
+          extraItems: JSON.parse(JSON.stringify(rec.extraItems || [])),
+          cashAmt: Number(rec.cashAmt) || 0,
+          onlineAmt: Number(rec.onlineAmt) || 0,
+          denomCounts: rec.denomCounts || null,
+          denomSummary: rec.denomSummary || "",
+          specialNote: rec.specialNote || "",
+          cashSlipBase64: isValidImageSource(rec.cashSlipBase64) ? rec.cashSlipBase64 : "",
+          onlineSlipBase64: isValidImageSource(rec.onlineSlipBase64) ? rec.onlineSlipBase64 : "",
+          courierStatus: rec.courierStatus || "📝 Bill Sent to Delhi",
+          docketNo: rec.docketNo || "",
+          sendState: rec.sendState || "EDITING",
+          isLocked: !!rec.isLocked,
+          ...layout
+        };
+        applyLayoutToAllDomSliders(currentBill);
+        syncBillInputsFromState();
+        updateA4Preview();
+      }
+
+      window.viewLogInPDFModal = function(idx) {
+        const rec = historyLogs[idx];
+        if (!rec) return;
+        loadRecordIntoCurrentBillCleanly(rec);
+        recordActivity(`📄 PDF देखा गया: ${rec.id} (${formatDDMMMYYYY(rec.date)})`);
+        openFullPrintPreview();
+      };
+
+      window.loadHistoricalIntoBuilder = function(idx) {
+        const rec = historyLogs[idx];
+        if (!rec) return;
+        pushUndoState("Loaded historical log");
+        loadRecordIntoCurrentBillCleanly(rec);
+        switchTab("builder");
+      };
+
+      // Save layout immediately whenever user adjusts any slider or updates A4 preview
+      let isBootingV21 = true;
+      const prevUpdateA4V21 = window.updateA4Preview;
+      window.updateA4Preview = function() {
+        if (typeof prevUpdateA4V21 === "function") prevUpdateA4V21();
+        if (!isBootingV21 && currentBill && currentBill.id) {
+          saveLayoutForBill(currentBill);
+        }
+      };
+
+      // Hydrate layouts & lock states after Google Sheet sync
+      const prevFetchV21 = window.fetchDataFromGoogleSheet;
+      window.fetchDataFromGoogleSheet = async function() {
+        if (typeof prevFetchV21 === "function") await prevFetchV21();
+        historyLogs.forEach(r => hydrateLayoutAndLockForRec(r));
+        renderHistoryLogs();
+      };
+
+      // -----------------------------------------------------------------------
+      // 3. AUTO-LOCK ON '✅ मिलान पूर्ण' OR '🔒 REQUISITION SENT' + FULL UNLOCK MODAL
+      // -----------------------------------------------------------------------
+      window.isBillStrictlyLocked = function(rec, realIdx) {
+        if (!rec) return false;
+        // If Admin explicitly unlocked this bill ID, allow editing!
+        if (unlockedReqIds.includes(rec.id)) return false;
+
+        hydrateLayoutAndLockForRec(rec);
+        const isOldHistorical = realIdx >= 4;
+        const isParcelVerified = Boolean(rec.courierStatus && rec.courierStatus.includes("मिलान पूर्ण"));
+        const isMarkedSent = Boolean(rec.sendState === "SENT" || rec.isLocked === true);
+        return isOldHistorical || isParcelVerified || isMarkedSent;
+      };
+
+      window.markBillAsSentAndLock = function(realIdx) {
+        const rec = historyLogs[realIdx];
+        if (!rec) return;
+        const ok = confirm(`क्या आपने "${formatDDMMMYYYY(rec.date)} (${rec.id})" का रिक्विजिशन भेज दिया है?\n\nOK दबाते ही यह बिल 🔒 लॉक हो जाएगा (एडिट व डिलीट बटन छुप जाएंगे)। बाद में जरूरत पड़ने पर आप '🔓 अनलॉक' मेनू से इसे खोल सकेंगे।`);
+        if (!ok) return;
+
+        rec.sendState = "SENT";
+        rec.isLocked = true;
+        if (!rec.courierStatus || rec.courierStatus === "📝 Editing Mode") {
+          rec.courierStatus = "📤 Requisition Sent (Locked)";
+        }
+
+        // Remove from unlockedReqIds if present
+        unlockedReqIds = unlockedReqIds.filter(id => id !== rec.id);
+        localStorage.setItem("pd_unlocked_reqs_v11", JSON.stringify(unlockedReqIds));
+
+        billLockVault[rec.id] = { sendState: "SENT", isLocked: true };
+        localStorage.setItem("pd_bill_lock_vault_v21", JSON.stringify(billLockVault));
+        localStorage.setItem("pd_history_v10", JSON.stringify(historyLogs));
+
+        if (String(currentBill.id) === String(rec.id)) {
+          currentBill.sendState = "SENT";
+          currentBill.isLocked = true;
+        }
+
+        renderHistoryLogs();
+        recordActivity(`🔒 रिक्विजिशन सेंड व लॉक किया गया: ${rec.id} (${formatDDMMMYYYY(rec.date)})`);
+
+        if (APP_CONFIG.GAS_WEB_APP_URL) {
+          fetch(APP_CONFIG.GAS_WEB_APP_URL, {
+            method: "POST", mode: "no-cors",
+            body: JSON.stringify({ action: "saveRequisition", pin: "5616", record: rec })
+          });
+        }
+      };
+
+      // Also auto-lock immediately when Parcel Verification is saved as '✅ मिलान पूर्ण'!
+      const prevSaveDelV21 = window.saveDeliveryVerification;
+      window.saveDeliveryVerification = function() {
+        const targetRec = activeDeliveryIdx !== null ? historyLogs[activeDeliveryIdx] : null;
+        if (typeof prevSaveDelV21 === "function") prevSaveDelV21();
+        if (targetRec && targetRec.courierStatus && targetRec.courierStatus.includes("मिलान पूर्ण")) {
+          targetRec.isLocked = true;
+          targetRec.sendState = "SENT";
+          unlockedReqIds = unlockedReqIds.filter(id => id !== targetRec.id);
+          localStorage.setItem("pd_unlocked_reqs_v11", JSON.stringify(unlockedReqIds));
+          billLockVault[targetRec.id] = { sendState: "SENT", isLocked: true };
+          localStorage.setItem("pd_bill_lock_vault_v21", JSON.stringify(billLockVault));
+          localStorage.setItem("pd_history_v10", JSON.stringify(historyLogs));
+          renderHistoryLogs();
+        }
+      };
+
+      // Upgrade Unlock Modal so it lists ALL bills (including recent locked bills like REQ-193, REQ-192, REQ-190!)
+      window.openUnlockOldBillModal = function() {
+        const sel = document.getElementById("unlockReqSelect");
+        if (!sel || historyLogs.length === 0) {
+          alert("कोई रिक्विजिशन रिकॉर्ड नहीं मिला!");
+          return;
+        }
+        sel.innerHTML = historyLogs.map((r, idx) => {
+          const locked = isBillStrictlyLocked(r, idx);
+          const reason = (r.courierStatus && r.courierStatus.includes("मिलान पूर्ण"))
+            ? "मिलान पूर्ण"
+            : (r.sendState === "SENT" ? "Requisition Sent" : (idx >= 4 ? "पुराना बिल" : "Editing Mode"));
+          return `<option value="${r.id}">${r.id} — ${formatDDMMMYYYY(r.date)} (₹${r.totalAmt || 0}) ${locked ? `🔒 [Locked: ${reason}]` : `🔓 [Unlocked / Editing]`}</option>`;
+        }).join("");
+        const modal = document.getElementById("unlockOldBillModal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        pushModalHistoryState();
+      };
+
+      const prevUnlockBillV21 = window.unlockSelectedHistoricalBill;
+      window.unlockSelectedHistoricalBill = function() {
+        const reqId = document.getElementById("unlockReqSelect").value;
+        if (!reqId) return;
+        const rec = historyLogs.find(r => r.id === reqId);
+        if (rec) {
+          rec.isLocked = false;
+          billLockVault[reqId] = { sendState: "EDITING", isLocked: false };
+          localStorage.setItem("pd_bill_lock_vault_v21", JSON.stringify(billLockVault));
+        }
+        if (typeof prevUnlockBillV21 === "function") prevUnlockBillV21();
+      };
+
+      // Enforce Strict Auto-Lock in Logs List View (Hide Edit & Delete when Locked, Add '🔒 Requisition Sent' Toggle when Editing!)
+      const prevRenderLogsV21 = window.renderHistoryLogs;
+      window.renderHistoryLogs = function() {
+        if (typeof prevRenderLogsV21 === "function") prevRenderLogsV21();
+
+        const listBox = document.getElementById("historyLogsContainer");
+        if (!listBox) return;
+
+        // Re-check every card in #historyLogsContainer
+        const cards = listBox.children;
+        const q = (document.getElementById("logSearchInput")?.value || "").toLowerCase();
+        const filtered = historyLogs.filter((r, idx) => {
+          if (logQuickFilter === "PENDING" && (!r.pendingItems || r.pendingItems.length === 0)) return false;
+          if (logQuickFilter === "UNVERIFIED" && idx >= 4 && !unlockedReqIds.includes(r.id)) return false;
+          if (logQuickFilter === "SLIPS" && !isValidImageSource(r.cashSlipBase64) && !isValidImageSource(r.onlineSlipBase64)) return false;
+          if (!q) return true;
+          return (
+            String(r.date).toLowerCase().includes(q) ||
+            formatDDMMMYYYY(r.date).toLowerCase().includes(q) ||
+            String(r.id).toLowerCase().includes(q) ||
+            (r.docketNo && String(r.docketNo).toLowerCase().includes(q)) ||
+            (r.items && r.items.some(i => i.name.toLowerCase().includes(q)))
+          );
+        });
+
+        filtered.forEach((r, cardIdx) => {
+          const card = cards[cardIdx];
+          if (!card) return;
+          const realIdx = historyLogs.indexOf(r);
+          const locked = isBillStrictlyLocked(r, realIdx);
+          const isParcelDone = Boolean(r.courierStatus && r.courierStatus.includes("मिलान पूर्ण"));
+
+          const editBtn = card.querySelector("button[onclick^='loadHistoricalIntoBuilder(']");
+          const delBtn = card.querySelector(".btn-del-req-v20");
+          const verifyBtn = card.querySelector("button[onclick^='openDeliveryVerifyModal(']");
+          const viewBtn = card.querySelector("button[onclick^='viewLogInPDFModal(']");
+          const actionsWrap = viewBtn ? viewBtn.parentElement : null;
+
+          if (locked) {
+            // HIDE Edit & Delete completely when Locked (Sent OR Parcel Verified)!
+            if (editBtn) editBtn.remove();
+            if (delBtn) delBtn.remove();
+            // If parcel verification is ALSO completed, hide Parcel Verify button too!
+            if (isParcelDone && verifyBtn) verifyBtn.remove();
+
+            if (actionsWrap && !actionsWrap.querySelector(".locked-badge-v21")) {
+              const lockTxt = isParcelDone ? "🔒 मिलान पूर्ण (Locked)" : "🔒 Requisition Sent";
+              actionsWrap.insertAdjacentHTML("beforeend", `
+                <span class="locked-badge-v21 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-lg font-bold text-[10.5px] border border-slate-300 dark:border-slate-600">
+                  ${lockTxt}
+                </span>
+              `);
+            }
+          } else {
+            // Unlocked / Editing Mode -> Show '🔒 Requisition Sent (Lock)' button for Admins!
+            if (actionsWrap && (activeRole === "ADMIN" || isMainSuperAdmin()) && !actionsWrap.querySelector(".btn-mark-sent-v21")) {
+              actionsWrap.insertAdjacentHTML("beforeend", `
+                <button type="button" onclick="markBillAsSentAndLock(${realIdx})" class="btn-mark-sent-v21 bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg font-bold shadow flex items-center gap-1" title="भेजने के बाद लॉक करें">
+                  <i class="fa-solid fa-lock"></i> Sent / लॉक करें
+                </button>
+              `);
+            }
+          }
+        });
+      };
+
+      // -----------------------------------------------------------------------
+      // 4. REAL ANDROID SHARE SHEET MODAL (CHOOSE WHATSAPP 1 / BUSINESS & ATTACH PDF IN GMAIL!)
+      // -----------------------------------------------------------------------
+      let preparedShareState = null;
+
+      function injectSmartSharePdfModal() {
+        if (document.getElementById("smartSharePdfModal")) return;
+        const html = `
+          <div id="smartSharePdfModal" style="z-index: 9998;" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-3 no-print">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-4 space-y-3 text-xs shadow-2xl border-2 border-emerald-500">
+              <div class="flex justify-between items-center border-b dark:border-slate-800 pb-2">
+                <h3 id="smartShareModalTitle" class="font-extrabold text-sm text-emerald-700 dark:text-emerald-400">📤 PDF शेयर एवं अटैचमेंट सेंटर</h3>
+                <button onclick="document.getElementById('smartSharePdfModal').classList.add('hidden')" class="bg-red-600 text-white w-7 h-7 rounded-xl font-bold">✕</button>
+              </div>
+
+              <div id="smartShareLoadingBox" class="py-6 text-center space-y-2">
+                <i class="fa-solid fa-spinner fa-spin text-2xl text-orange-600"></i>
+                <div class="font-bold text-slate-700 dark:text-slate-200">क्रिस्टल-क्लियर 1-Page PDF तैयार हो रहा है...</div>
+              </div>
+
+              <div id="smartShareReadyBox" class="hidden space-y-2.5">
+                <div class="bg-emerald-50 dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-xl p-2.5 space-y-1">
+                  <div class="font-extrabold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-pdf text-red-600 text-base"></i>
+                    <span id="smartShareFileNameTxt" class="truncate">Requisition.pdf</span>
+                  </div>
+                  <div class="text-[10.5px] text-slate-600 dark:text-slate-300" id="smartShareHintTxt">
+                    नीचे बड़ा बटन दबाते ही आपके फोन की Share Sheet खुलेगी—वहाँ से अपना पसंदीदा WhatsApp, WhatsApp Business या Gmail चुनें, PDF फाइल अपने-आप अटैच हो जाएगी!
+                  </div>
+                </div>
+
+                <!-- BIG PRIMARY FRESH-GESTURE NATIVE SHARE BUTTON -->
+                <button type="button" onclick="triggerInstantNativeFileShare()" id="btnPrimaryNativeShare" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-3 px-4 rounded-xl font-extrabold text-sm shadow-lg flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-share-nodes text-base"></i>
+                  <span id="btnPrimaryNativeShareTxt">शेयर शीट खोलें (WhatsApp / Business / Gmail + PDF)</span>
+                </button>
+
+                <!-- Email Helper Strip (Copy To-Email / Subject / Body) -->
+                <div id="smartShareEmailHelper" class="bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-700 rounded-xl p-2 flex flex-wrap justify-between items-center gap-1.5">
+                  <div class="truncate text-[10.5px]">
+                    <span class="text-slate-500 font-bold">To:</span> <b id="smartShareToEmailTxt" class="text-blue-800 dark:text-blue-300"></b>
+                  </div>
+                  <button type="button" onclick="copyTextToClipboardV21(addressConfig.senderEmail, 'ईमेल आईडी कॉपी हो गई!')" class="bg-blue-600 text-white px-2 py-1 rounded-lg font-bold text-[10px]">📋 कॉपी ईमेल</button>
+                </div>
+
+                <!-- Auto-Lock Option after Sending -->
+                <label class="flex items-center gap-2 bg-amber-50 dark:bg-slate-800 border border-amber-300 dark:border-slate-700 p-2 rounded-xl cursor-pointer font-bold text-amber-900 dark:text-amber-300">
+                  <input type="checkbox" id="autoLockAfterShareChk" class="accent-orange-600 w-4 h-4" />
+                  <span>🔒 भेजने के बाद इस बिल को 'Requisition Sent' लॉक कर दें</span>
+                </label>
+
+                <!-- Fallback Row for Desktop / Manual Download -->
+                <div class="grid grid-cols-3 gap-1.5 pt-1 border-t dark:border-slate-800">
+                  <button type="button" onclick="downloadPreparedPdfInstant()" class="bg-orange-600 text-white py-2 rounded-lg font-bold text-[10.5px]"><i class="fa-solid fa-download mr-1"></i>PDF डाउनलोड</button>
+                  <button type="button" onclick="copyPreparedShareMessage()" class="bg-slate-700 text-white py-2 rounded-lg font-bold text-[10.5px]"><i class="fa-regular fa-copy mr-1"></i>मैसेज कॉपी</button>
+                  <button type="button" onclick="openFallbackMailtoOrWA()" id="btnSecondaryFallback" class="bg-blue-600 text-white py-2 rounded-lg font-bold text-[10.5px]">ऐप खोलें</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.insertAdjacentHTML("beforeend", html);
+      }
+
+      window.copyTextToClipboardV21 = function(txt, toastMsg) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).then(() => { if (toastMsg) alert("✅ " + toastMsg); }).catch(() => {});
+        }
+      };
+
+      async function openSmartShareModalForMode(mode) {
+        injectSmartSharePdfModal();
+        preparedShareState = null;
+
+        const modal = document.getElementById("smartSharePdfModal");
+        const loadingBox = document.getElementById("smartShareLoadingBox");
+        const readyBox = document.getElementById("smartShareReadyBox");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        loadingBox.classList.remove("hidden");
+        readyBox.classList.add("hidden");
+
+        const dStr = formatDDMMMYYYY(currentBill.date);
+        const pdfFilename = getOfficialRequisitionPdfFilename(currentBill.date);
+        const subjectTxt = `Requisition Patna Dham Bihar ${formatFilenameDDMMYY(currentBill.date)}`;
+
+        const itemsPlain = (currentBill.items || []).map((i, idx) => {
+          const qDisp = i.qtyDisplay || (Number(i.extraFreeQty) > 0 ? `${i.qty} + ${i.extraFreeQty}` : i.qty);
+          return `${idx + 1}. ${i.name} - ${qDisp} pcs (₹${Number(i.rate) * Number(i.qty)})`;
+        }).join("\n");
+        const denomTxt = currentBill.denomSummary ? `\n💵 *नोट विवरण:* ${currentBill.denomSummary}` : "";
+        const noteTxt = currentBill.specialNote ? `\n📝 *Note:* ${currentBill.specialNote}` : "";
+
+        const waText = `*ॐ नमोः नारायण*\n*भगवान श्री लक्ष्मी नारायण धाम, पटना शाखा*\n📅 *Date:* ${dStr} (${currentBill.id})\n------------------\n${itemsPlain}${denomTxt}${noteTxt}\n------------------\n*Total Amount:* ₹${currentBill.totalAmt}\n*Cash:* ₹${currentBill.cashAmt}${Number(currentBill.onlineAmt) > 0 ? ` | *Online:* ₹${currentBill.onlineAmt}` : ""}\n\n*Sender-* ${addressConfig.senderName}\n${addressConfig.senderMob}\nPatna Dham, Bihar`;
+
+        const emailText = `ॐ नमो नारायण जी,\n\nपटना धाम से दिनांक ${dStr} (${currentBill.id}) का रिक्विजिशन (Total: ₹${currentBill.totalAmt}) PDF के साथ संलग्न है।\n\nSender- ${addressConfig.senderName}\n${addressConfig.senderMob}\nPatna Dham, Bihar`;
+
+        try {
+          const { pdfBlob } = await generateCrystalSinglePagePDFBlobAndDataUrl();
+          const pdfFile = new File([pdfBlob], pdfFilename, { type: "application/pdf" });
+
+          preparedShareState = {
+            mode,
+            pdfBlob,
+            pdfFile,
+            pdfFilename,
+            subjectTxt,
+            shareText: mode === "EMAIL" ? emailText : waText
+          };
+
+          document.getElementById("smartShareModalTitle").textContent = mode === "EMAIL"
+            ? "📧 Gmail में PDF अटैच करके भेजें"
+            : "📲 WhatsApp / Business चुनकर PDF भेजें";
+          document.getElementById("smartShareFileNameTxt").textContent = pdfFilename;
+          document.getElementById("smartShareToEmailTxt").textContent = addressConfig.senderEmail || "gurukripaskpatna@gmail.com";
+          document.getElementById("smartShareEmailHelper").classList.toggle("hidden", mode !== "EMAIL");
+          document.getElementById("btnPrimaryNativeShareTxt").textContent = mode === "EMAIL"
+            ? "📧 Gmail चुनें (PDF अपने-आप अटैच होगा!)"
+            : "📲 WhatsApp / Business चुनें (PDF साथ जाएगा!)";
+          document.getElementById("btnSecondaryFallback").textContent = mode === "EMAIL" ? "📧 सिर्फ Mailto" : "📲 सिर्फ Text WA";
+          document.getElementById("autoLockAfterShareChk").checked = false;
+
+          loadingBox.classList.add("hidden");
+          readyBox.classList.remove("hidden");
+        } catch (err) {
+          modal.classList.add("hidden");
+          alert("❌ PDF बनाने में समस्या आई, कृपया दोबारा प्रयास करें।");
+        }
+      }
+
+      window.triggerInstantNativeFileShare = async function() {
+        if (!preparedShareState) return;
+        const { pdfFile, subjectTxt, shareText, pdfFilename, mode } = preparedShareState;
+
+        // Auto-copy message text in background as extra convenience
+        try { if (navigator.clipboard) navigator.clipboard.writeText(shareText); } catch (e) {}
+
+        const shouldLock = document.getElementById("autoLockAfterShareChk")?.checked;
+
+        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+          try {
+            // Synchronous fresh user gesture -> Opens Android Share Sheet with WhatsApp, WA Business & Gmail + PDF attached!
+            await navigator.share({
+              title: subjectTxt,
+              text: shareText,
+              files: [pdfFile]
+            });
+            recordActivity(`${mode === "EMAIL" ? "📧 Gmail" : "📲 WhatsApp"} शेयर शीट से ${pdfFilename} भेजा गया`);
+            if (shouldLock) lockCurrentBillAfterSend();
+            document.getElementById("smartSharePdfModal").classList.add("hidden");
+            return;
+          } catch (e) {
+            // User cancelled share sheet (AbortError) -> do NOT redirect to WA Business or mailto!
+            if (e && e.name === "AbortError") return;
+          }
+        }
+
+        // Fallback only if browser truly does not support Web Share Files (e.g. Desktop PC)
+        downloadPreparedPdfInstant();
+        alert(`📥 "${pdfFilename}" डाउनलोड हो गया है! आपका ब्राउज़र डायरेक्ट फाइल शेयर सपोर्ट नहीं करता, कृपया डाउनलोड की गई PDF को मैन्युअली अटैच करें।`);
+      };
+
+      function lockCurrentBillAfterSend() {
+        const idx = historyLogs.findIndex(r => String(r.id).trim() === String(currentBill.id).trim());
+        if (idx > -1) {
+          historyLogs[idx].sendState = "SENT";
+          historyLogs[idx].isLocked = true;
+          historyLogs[idx].courierStatus = "📤 Requisition Sent (Locked)";
+          unlockedReqIds = unlockedReqIds.filter(id => id !== currentBill.id);
+          localStorage.setItem("pd_unlocked_reqs_v11", JSON.stringify(unlockedReqIds));
+          billLockVault[currentBill.id] = { sendState: "SENT", isLocked: true };
+          localStorage.setItem("pd_bill_lock_vault_v21", JSON.stringify(billLockVault));
+          localStorage.setItem("pd_history_v10", JSON.stringify(historyLogs));
+          renderHistoryLogs();
+        }
+      }
+
+      window.downloadPreparedPdfInstant = function() {
+        if (!preparedShareState) return;
+        const url = URL.createObjectURL(preparedShareState.pdfBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = preparedShareState.pdfFilename;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      };
+
+      window.copyPreparedShareMessage = function() {
+        if (!preparedShareState) return;
+        copyTextToClipboardV21(preparedShareState.shareText, "मैसेज कॉपी हो गया!");
+      };
+
+      window.openFallbackMailtoOrWA = function() {
+        if (!preparedShareState) return;
+        if (preparedShareState.mode === "EMAIL") {
+          window.location.href = `mailto:${addressConfig.senderEmail}?subject=${encodeURIComponent(preparedShareState.subjectTxt)}&body=${encodeURIComponent(preparedShareState.shareText)}`;
+        } else {
+          window.open(`https://wa.me/?text=${encodeURIComponent(preparedShareState.shareText)}`, "_blank");
+        }
+      };
+
+      // Connect both Email+PDF and WA+PDF buttons to the new Instant Share Sheet Modal
+      window.sendDirectEmailWithAttachment = function() { openSmartShareModalForMode("EMAIL"); };
+      window.shareOnWhatsAppWithFile = function() { openSmartShareModalForMode("WA"); };
+      window.shareOnWhatsApp = function() { openSmartShareModalForMode("WA"); };
+
+      // Startup hydration
+      setTimeout(() => {
+        historyLogs.forEach(r => hydrateLayoutAndLockForRec(r));
+        isBootingV21 = false;
+        renderHistoryLogs();
+      }, 800);
+    })();
 
   </script>
 </body>
